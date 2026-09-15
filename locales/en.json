@@ -1,0 +1,71 @@
+{
+    "title": {
+        "store_unavailable": "Store Unavailable",
+        "too_far": "Too Far Away",
+        "purchase_failed": "Purchase Failed",
+        "sale_failed": "Sale Failed"
+    },
+    "error": {
+        "store_unavailable_buy": "This store is not available.",
+        "store_unavailable_sell": "This store does not buy items.",
+        "too_far": "You need to be closer to the store to do that.",
+        "purchase_processing": "Please wait, your last purchase is still processing.",
+        "sale_processing": "Please wait, your last sale is still processing.",
+        "basket_invalid": "Your basket is empty or invalid.",
+        "basket_bad_data": "Your basket contains invalid data.",
+        "items_unavailable": "One or more items in your basket are no longer available.",
+        "insufficient_funds": "You do not have enough %s for this purchase.",
+        "payment_failed": "Something went wrong taking your payment.",
+        "inventory_full": "Your inventory is full -- nothing could be added.",
+        "checkout_error": "Something went wrong processing your order.",
+        "not_enough_to_sell": "You do not have %d %s to sell.",
+        "remove_item_failed": "Something went wrong removing your items.",
+        "sale_error": "Something went wrong processing your sale."
+    },
+    "success": {
+        "purchase": "Purchased %d item(s) for $%.2f",
+        "purchase_refund_suffix": " -- %d item(s) refunded (inventory full)",
+        "sale": "Sold %d item(s) for $%.2f"
+    },
+    "webhook": {
+        "purchase_title": "🛒 Purchase -- %s",
+        "sale_title": "💰 Sale -- %s",
+        "field_player": "Player",
+        "field_total_paid": "Total Paid",
+        "field_total_received": "Total Received",
+        "field_items": "Items",
+        "footer": "rsg-stores",
+        "unknown_player": "Unknown",
+        "no_items": "n/a"
+    },
+    "ui": {
+        "subtitle": "General Merchandise",
+        "tab_buy": "Buy",
+        "tab_sell": "Sell",
+        "basket_hint_prefix": "Up to",
+        "basket_hint_suffix": "unique items",
+        "clear": "Clear",
+        "checkout": "Checkout",
+        "sell_items": "Sell Items",
+        "heading_buy": "✦ Your Basket ✦",
+        "heading_sell": "✦ Items to Sell ✦",
+        "total_label_buy": "Total:",
+        "total_label_sell": "You'll Receive:",
+        "empty_buy": "Your basket is empty. Add items from the grid above.",
+        "empty_sell": "No items selected. Choose items above to sell.",
+        "add_to_basket": "Add to Basket",
+        "sell_button": "Sell",
+        "owned_prefix": "You own:",
+        "unit_suffix": "ea",
+        "toast_no_item_title": "Sell",
+        "toast_no_item": "You don't have any %s to sell.",
+        "toast_cap_sell_title": "Sell",
+        "toast_cap_buy_title": "Basket",
+        "toast_cap_sell": "You can only sell %d of %s right now.",
+        "toast_cap_buy": "You can only carry %d of %s right now.",
+        "toast_basket_full_title": "Basket Full",
+        "toast_basket_full": "You can only add up to %d unique items.",
+        "browse": "Browse %s",
+        "close": "Close"
+    }
+}
