@@ -9,6 +9,8 @@ local UiLocale = {
     subtitle = locale('ui.subtitle'),
     tabBuy = locale('ui.tab_buy'),
     tabSell = locale('ui.tab_sell'),
+    showOnlyOwned = locale('ui.show_only_owned'),
+    stockPrefix = locale('ui.stock_prefix'),
     basketHintPrefix = locale('ui.basket_hint_prefix'),
     basketHintSuffix = locale('ui.basket_hint_suffix'),
     clear = locale('ui.clear'),
@@ -39,6 +41,11 @@ local shopsById = {}
 local currentShop = nil
 local spawnedPeds = {}
 local shopZones = {}
+local shopBlips = {}
+local shopRequest = 0
+local shopOpen = false
+local interactionsReady = false
+local registeredInteractions = {}
 
 for _, shop in pairs(Config.Shops) do
     shopsById[shop.id] = shop
@@ -49,7 +56,7 @@ local function buildCategoryPayload(groups, direction, shop, priceOverrides)
     local priceField = direction .. 'Price'
 
     for _, group in ipairs(groups) do
-        local category = Config.ItemGroups[group[1]]
+        local category = shop.custom and shop.itemGroups[group[1]] or Config.ItemGroups[group[1]]
         local regionalAdjustment = group[2]
         local items = {}
 
@@ -88,9 +95,11 @@ local function buildShopPayload(shop, state)
         maxUniqueItems = Config.MaxUniqueBasketItems,
         maxItemQuantity = Config.MaxItemQuantity,
         locale = UiLocale,
+        stock = state and state.stock,
+        revision = state and state.revision,
     }
 
-    if shop.sell then
+    if shop.sell and #shop.sell > 0 then
         payload.sell = {
             categories = buildCategoryPayload(shop.sell, 'sell', shop, state and state.sellPrices),
             owned = (state and state.owned) or {},
@@ -104,31 +113,85 @@ end
 
 local function OpenShop(shopId)
     local shop = shopsById[shopId]
-    if not shop then return end
+    if not shop then return false end
 
     currentShop = shop
+    shopOpen = false
+    shopRequest = shopRequest + 1
+    local request = shopRequest
 
     RSGCore.Functions.TriggerCallback('rsg-stores:server:getShopState', function(state)
-        if currentShop ~= shop then return end
+        if currentShop ~= shop or request ~= shopRequest then return end
+        if shop.custom then
+            if not state or not state.revision or state.revision < shop.revision then return end
+            shop.itemGroups = state.itemGroups
+            shop.revision = state.revision
+        end
 
         SetNuiFocus(true, true)
+        shopOpen = true
         SendNUIMessage({
             action = 'open',
             shop = buildShopPayload(shop, state),
         })
     end, shop.id)
+    return true
 end
 
 local function CloseShop()
     if not currentShop then return end
     currentShop = nil
+    shopOpen = false
+    shopRequest = shopRequest + 1
     SetNuiFocus(false, false)
     SendNUIMessage({ action = 'close' })
 end
 
+exports('OpenShop', OpenShop)
+
+local function refreshCustomShop(shopId)
+    local shop = shopsById[shopId]
+    if not shop or currentShop ~= shop then return end
+    shopRequest = shopRequest + 1
+    local request = shopRequest
+    RSGCore.Functions.TriggerCallback('rsg-stores:server:getShopState', function(state)
+        if currentShop ~= shop or request ~= shopRequest then return end
+        if not state or not state.revision then CloseShop() return end
+        if state.revision < shop.revision then return end
+        shop.itemGroups = state.itemGroups
+        shop.revision = state.revision
+        SetNuiFocus(true, true)
+        SendNUIMessage({ action = shopOpen and 'refresh' or 'open', shop = buildShopPayload(shop, state) })
+        shopOpen = true
+    end, shopId)
+end
+
+RegisterNetEvent('rsg-stores:client:updateCustomShop', function(shopId, itemGroups, revision)
+    local shop = shopsById[shopId]
+    if not shop or not shop.custom or revision <= shop.revision then return end
+    shop.itemGroups = itemGroups
+    shop.revision = revision
+    refreshCustomShop(shopId)
+end)
+
+RegisterNetEvent('rsg-stores:client:refreshCustomShop', refreshCustomShop)
+
 CreateThread(function()
     while true do
         Wait(1000)
+        for _, shop in pairs(shopsById) do
+            if shop.blip and shop.blip.handle then
+                local open = IsStoreOpen(shop)
+                if shop.blip.open ~= open then
+                    if open then
+                        BlipRemoveModifier(shop.blip.handle, joaat('BLIP_MODIFIER_MP_COLOR_2'))
+                    else
+                        BlipAddModifier(shop.blip.handle, joaat('BLIP_MODIFIER_MP_COLOR_2'))
+                    end
+                    shop.blip.open = open
+                end
+            end
+        end
         if currentShop then
             local shop = currentShop
             local playerCoords = GetEntityCoords(PlayerPedId())
@@ -151,7 +214,7 @@ RegisterNUICallback('checkout', function(data, cb)
     if not currentShop then return end
     if type(data) ~= 'table' or type(data.basket) ~= 'table' then return end
 
-    TriggerServerEvent('rsg-stores:server:checkout', currentShop.id, data.basket)
+    TriggerServerEvent('rsg-stores:server:checkout', currentShop.id, data.basket, data.revision)
 end)
 
 RegisterNUICallback('sellCheckout', function(data, cb)
@@ -160,7 +223,7 @@ RegisterNUICallback('sellCheckout', function(data, cb)
     if not currentShop then return end
     if type(data) ~= 'table' or type(data.basket) ~= 'table' then return end
 
-    TriggerServerEvent('rsg-stores:server:sellCheckout', currentShop.id, data.basket)
+    TriggerServerEvent('rsg-stores:server:sellCheckout', currentShop.id, data.basket, data.revision)
 end)
 
 RegisterNetEvent('rsg-stores:client:checkoutResult', function(success)
@@ -189,8 +252,8 @@ end)
 local function registerShopInteraction(shop)
     local zone = exports.ox_target:addBoxZone({
         name = 'rsg_stores_' .. shop.id,
-        coords = vector3(shop.coords.x, shop.coords.y, shop.coords.z + 1.0),
-        size = vector3(1.5, 1.5, 2.0),
+        coords = vector3(shop.coords.x, shop.coords.y, shop.coords.z),
+        size = vector3(3, 3, 1.0),
         rotation = shop.coords.w,
         options = {
             {
@@ -198,6 +261,9 @@ local function registerShopInteraction(shop)
                 icon = 'fa-solid fa-cart-shopping',
                 label = locale('ui.browse', shop.label),
                 distance = Config.MaxInteractDistance,
+                canInteract = function()
+                    return IsStoreOpen(shop)
+                end,
                 onSelect = function()
                     OpenShop(shop.id)
                 end,
@@ -225,7 +291,7 @@ local function registerShopInteraction(shop)
         return
     end
 
-    local ped = CreatePed(model, shop.coords.x, shop.coords.y, shop.coords.z, shop.coords.w, false, false)
+    local ped = CreatePed(model, shop.coords.x, shop.coords.y, shop.coords.z - 1.0, shop.coords.w, false, false)
     SetModelAsNoLongerNeeded(model)
     SetRandomOutfitVariation(ped, true)
     SetEntityInvincible(ped, true)
@@ -235,24 +301,64 @@ local function registerShopInteraction(shop)
     spawnedPeds[#spawnedPeds + 1] = ped
 end
 
+local function setupShop(shop)
+    if registeredInteractions[shop.id] then return end
+    registeredInteractions[shop.id] = true
+    local ok, err = pcall(registerShopInteraction, shop)
+    if not ok then
+        registeredInteractions[shop.id] = nil
+        print(('[rsg-stores] ERROR registering interaction for shop "%s": %s'):format(shop.id, err))
+        return
+    end
+
+    if shop.blip and shop.blip.show then
+        local blip = BlipAddForCoords(1664425300, shop.coords.x, shop.coords.y, shop.coords.z)
+        SetBlipSprite(blip, joaat(shop.blip.sprite))
+        SetBlipScale(blip, shop.blip.scale)
+        SetBlipName(blip, shop.blip.label)
+        shop.blip.handle = blip
+        shop.blip.open = IsStoreOpen(shop)
+        if not shop.blip.open then
+            BlipAddModifier(blip, joaat('BLIP_MODIFIER_MP_COLOR_2'))
+        end
+        shopBlips[#shopBlips + 1] = blip
+    end
+end
+
+RegisterNetEvent('rsg-stores:client:registerCustomShop', function(shop)
+    local existing = shopsById[shop.id]
+    if existing then
+        if existing.custom and shop.revision >= existing.revision then
+            existing.itemGroups = shop.itemGroups
+            existing.revision = shop.revision
+            refreshCustomShop(shop.id)
+        end
+        if interactionsReady then setupShop(existing) end
+        return
+    end
+
+    shopsById[shop.id] = shop
+    if interactionsReady then setupShop(shop) end
+end)
+
 CreateThread(function()
     if GetResourceState('ox_target') ~= 'started' then
         print('[rsg-stores] WARNING: ox_target is not running -- shop interactions will not be registered until it starts.')
         return
     end
 
-    for _, shop in pairs(Config.Shops) do
-        local ok, err = pcall(registerShopInteraction, shop)
-        if not ok then
-            print(('[rsg-stores] ERROR registering interaction for shop "%s": %s'):format(shop.id, err))
-        end
+    local customShops
+    RSGCore.Functions.TriggerCallback('rsg-stores:server:getCustomShops', function(shops)
+        customShops = shops
+    end)
+    while not customShops do Wait(100) end
+    for _, shop in ipairs(customShops) do
+        if not shopsById[shop.id] then shopsById[shop.id] = shop end
+    end
 
-        if shop.blip and shop.blip.show then
-            local blip = BlipAddForCoords(1664425300, shop.coords.x, shop.coords.y, shop.coords.z)
-            SetBlipSprite(blip, joaat(shop.blip.sprite))
-            SetBlipScale(blip, shop.blip.scale)
-            SetBlipName(blip, shop.blip.label)
-        end
+    interactionsReady = true
+    for _, shop in pairs(shopsById) do
+        setupShop(shop)
     end
 end)
 
@@ -261,6 +367,8 @@ AddEventHandler('onResourceStop', function(resource)
 
     if currentShop then
         currentShop = nil
+        shopOpen = false
+        shopRequest = shopRequest + 1
         SetNuiFocus(false, false)
         SendNUIMessage({ action = 'close' })
     end
@@ -270,6 +378,10 @@ AddEventHandler('onResourceStop', function(resource)
             exports.ox_target:removeZone(zone)
         end
     end
+    for _, blip in ipairs(shopBlips) do
+        RemoveBlip(blip)
+    end
+
     for _, ped in ipairs(spawnedPeds) do
         if DoesEntityExist(ped) then
             DeleteEntity(ped)

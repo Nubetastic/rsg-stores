@@ -20,6 +20,9 @@
         "checkout_error": "Something went wrong processing your order.",
         "not_enough_to_sell": "You do not have %d %s to sell.",
         "remove_item_failed": "Something went wrong removing your items.",
+        "shop_changed": "The shop has changed. Please review the updated items and prices.",
+        "shop_stock": "The shop does not have enough stock for this purchase.",
+        "shop_busy": "The shop is processing another transaction. Please try again.",
         "sale_error": "Something went wrong processing your sale."
     },
     "success": {
@@ -42,6 +45,8 @@
         "subtitle": "General Merchandise",
         "tab_buy": "Buy",
         "tab_sell": "Sell",
+        "stock_prefix": "In stock:",
+        "show_only_owned": "Show only owned items",
         "basket_hint_prefix": "Up to",
         "basket_hint_suffix": "unique items",
         "clear": "Clear",

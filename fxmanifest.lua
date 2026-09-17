@@ -12,6 +12,7 @@ shared_scripts {
 }
 
 client_scripts {
+    'client/hours.lua',
     'client/client.lua',
 }
 

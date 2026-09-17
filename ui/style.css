@@ -165,15 +165,40 @@ html, body {
 }
 
 .mode-tabs {
+    position: relative;
     display: flex;
     justify-content: center;
     gap: 10px;
-    margin: 0 24px 14px;
+    width: max-content;
+    margin: 0 auto 14px;
 }
 
 .mode-tabs.hidden,
 .mode-tab.hidden {
     display: none;
+}
+
+.owned-filter {
+    position: absolute;
+    left: calc(100% + 16px);
+    top: 50%;
+    transform: translateY(-50%);
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--rdr-gold-dim);
+    cursor: pointer;
+}
+
+.owned-filter.hidden {
+    display: none;
+}
+
+.owned-filter input {
+    margin: 0;
+    accent-color: var(--rdr-gold-dim);
+    cursor: pointer;
 }
 
 .mode-tab {

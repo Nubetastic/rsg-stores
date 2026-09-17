@@ -1,5 +1,12 @@
 Config = {}
 
+Config.Hours = {
+    open = 16,
+    close = 17,
+    enable = true,
+    unlockDuration = 30 * 1000,
+}
+
 -- Account type charged on checkout. Must be one of the accounts on
 -- Player.PlayerData.money ('cash', 'bank', 'bloodmoney', 'gold').
 -- Can be overridden per-shop in configShops.lua with shop.money.
@@ -26,7 +33,7 @@ Config.MaxSellQuantity = 99
 -- the server actually processes getShopState/checkout/sellCheckout. Keeps
 -- this in sync with the ox_target interaction distance below so players
 -- can't open a shop, walk away, and keep buying/selling remotely.
-Config.MaxInteractDistance = 3.0
+Config.MaxInteractDistance = 2.5
 
 -- ---------------------------------------------------------------------------
 -- Dynamic pricing: every unit a player buys nudges that item's price UP at
