@@ -308,7 +308,7 @@
     function open(data) {
         shop = data;
         L = data.locale || L;
-        mode = 'buy';
+        mode = !shop.categories.length && shop.sell ? 'sell' : 'buy';
         baskets.buy.clear();
         baskets.sell.clear();
         activeCategoryId.buy = shop.categories.length ? shop.categories[0].id : null;

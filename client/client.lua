@@ -38,29 +38,34 @@ local UiLocale = {
 local shopsById = {}
 local currentShop = nil
 local spawnedPeds = {}
+local shopZones = {}
 
 for _, shop in pairs(Config.Shops) do
     shopsById[shop.id] = shop
 end
 
-local function buildCategoryPayload(categories, shopId, priceOverrides)
+local function buildCategoryPayload(groups, direction, shop, priceOverrides)
     local out = {}
+    local priceField = direction .. 'Price'
 
-    for _, category in ipairs(categories) do
+    for _, group in ipairs(groups) do
+        local category = Config.ItemGroups[group[1]]
+        local regionalAdjustment = group[2]
         local items = {}
 
         for _, entry in ipairs(category.items) do
             local itemData = RSGCore.Shared.Items[entry.name]
 
-            if itemData then
+            if itemData and entry[priceField] ~= nil then
+                local price = math.max(0.01, entry[priceField] + regionalAdjustment)
                 items[#items + 1] = {
                     name = entry.name,
                     label = itemData.label or entry.name,
-                    price = (priceOverrides and priceOverrides[entry.name]) or entry.price,
+                    price = (priceOverrides and priceOverrides[entry.name]) or price,
                     image = 'nui://' .. Config.Img .. (itemData.image or (entry.name .. '.png')),
                 }
-            else
-                print(('[rsg-stores] WARNING: item "%s" (shop "%s") does not exist in RSGCore.Shared.Items and was skipped'):format(entry.name, shopId))
+            elseif not itemData and entry[priceField] ~= nil then
+                print(('[rsg-stores] WARNING: item "%s" (shop "%s") does not exist in RSGCore.Shared.Items and was skipped'):format(entry.name, shop.id))
             end
         end
 
@@ -79,7 +84,7 @@ local function buildShopPayload(shop, state)
     local payload = {
         id = shop.id,
         label = shop.label,
-        categories = buildCategoryPayload(shop.categories, shop.id, state and state.buyPrices),
+        categories = buildCategoryPayload(shop.buy, 'buy', shop, state and state.buyPrices),
         maxUniqueItems = Config.MaxUniqueBasketItems,
         maxItemQuantity = Config.MaxItemQuantity,
         locale = UiLocale,
@@ -87,7 +92,7 @@ local function buildShopPayload(shop, state)
 
     if shop.sell then
         payload.sell = {
-            categories = buildCategoryPayload(shop.sell.categories, shop.id, state and state.sellPrices),
+            categories = buildCategoryPayload(shop.sell, 'sell', shop, state and state.sellPrices),
             owned = (state and state.owned) or {},
             maxUniqueItems = Config.MaxUniqueSellItems,
             maxItemQuantity = Config.MaxSellQuantity,
@@ -180,15 +185,33 @@ RegisterNetEvent('rsg-stores:client:sellResult', function(success)
     end
 end)
 
--- Every shop is interacted with via a ped, targeted through ox_target's
--- addLocalEntity. Requires shop.npcmodel to be set.
+-- Shop zones are independent of the optional NPC.
 local function registerShopInteraction(shop)
+    local zone = exports.ox_target:addBoxZone({
+        name = 'rsg_stores_' .. shop.id,
+        coords = vector3(shop.coords.x, shop.coords.y, shop.coords.z + 1.0),
+        size = vector3(1.5, 1.5, 2.0),
+        rotation = shop.coords.w,
+        options = {
+            {
+                name = 'rsg_stores_' .. shop.id,
+                icon = 'fa-solid fa-cart-shopping',
+                label = locale('ui.browse', shop.label),
+                distance = Config.MaxInteractDistance,
+                onSelect = function()
+                    OpenShop(shop.id)
+                end,
+            },
+        },
+    })
+    shopZones[#shopZones + 1] = zone
+
+    if shop.npc == false then return end
+
     if not shop.npcmodel then
-        print(('[rsg-stores] ERROR: shop "%s" has no npcmodel set -- skipping, it will not be interactable.'):format(shop.id))
+        print(('[rsg-stores] WARNING: shop "%s" has no npcmodel set -- NPC will not be spawned.'):format(shop.id))
         return
     end
-
-    local browseLabel = locale('ui.browse', shop.label)
     local model = joaat(shop.npcmodel)
     RequestModel(model)
     local attempts = 0
@@ -198,7 +221,7 @@ local function registerShopInteraction(shop)
     end
 
     if not HasModelLoaded(model) then
-        print(('[rsg-stores] WARNING: ped model "%s" for shop "%s" failed to load -- skipping, it will not be interactable.'):format(shop.npcmodel, shop.id))
+        print(('[rsg-stores] WARNING: ped model "%s" for shop "%s" failed to load -- NPC will not be spawned.'):format(shop.npcmodel, shop.id))
         return
     end
 
@@ -210,18 +233,6 @@ local function registerShopInteraction(shop)
     FreezeEntityPosition(ped, true)
     SetEntityAsMissionEntity(ped, true, true)
     spawnedPeds[#spawnedPeds + 1] = ped
-
-    exports.ox_target:addLocalEntity(ped, {
-        {
-            name = 'rsg_stores_' .. shop.id,
-            icon = 'fa-solid fa-cart-shopping',
-            label = browseLabel,
-            distance = Config.MaxInteractDistance,
-            onSelect = function()
-                OpenShop(shop.id)
-            end,
-        },
-    })
 end
 
 CreateThread(function()
@@ -254,6 +265,11 @@ AddEventHandler('onResourceStop', function(resource)
         SendNUIMessage({ action = 'close' })
     end
 
+    if GetResourceState('ox_target') == 'started' then
+        for _, zone in ipairs(shopZones) do
+            exports.ox_target:removeZone(zone)
+        end
+    end
     for _, ped in ipairs(spawnedPeds) do
         if DoesEntityExist(ped) then
             DeleteEntity(ped)
