@@ -40,6 +40,7 @@ local UiLocale = {
 local shopsById = {}
 local currentShop = nil
 local spawnedPeds = {}
+local npcOpen = {}
 local shopZones = {}
 local shopBlips = {}
 local shopRequest = 0
@@ -176,10 +177,62 @@ end)
 
 RegisterNetEvent('rsg-stores:client:refreshCustomShop', refreshCustomShop)
 
+local function updateShopNpc(shop)
+    if shop.npc == false then return end
+
+    local open = IsStoreOpen(shop)
+    if npcOpen[shop.id] == open then return end
+    npcOpen[shop.id] = open
+
+    if not open then
+        local ped = spawnedPeds[shop.id]
+        if ped and DoesEntityExist(ped) then
+            DeleteEntity(ped)
+        end
+        spawnedPeds[shop.id] = nil
+        return
+    end
+
+    if not shop.npcmodel then
+        print(('[rsg-stores] WARNING: shop "%s" has no npcmodel set -- NPC will not be spawned.'):format(shop.id))
+        return
+    end
+    local model = joaat(shop.npcmodel)
+    RequestModel(model)
+    local attempts = 0
+    while not HasModelLoaded(model) and attempts < 100 do
+        Wait(10)
+        attempts = attempts + 1
+    end
+
+    if not HasModelLoaded(model) then
+        print(('[rsg-stores] WARNING: ped model "%s" for shop "%s" failed to load -- NPC will not be spawned.'):format(shop.npcmodel, shop.id))
+        return
+    end
+
+    if not IsStoreOpen(shop) then
+        SetModelAsNoLongerNeeded(model)
+        npcOpen[shop.id] = false
+        return
+    end
+
+    local ped = CreatePed(model, shop.coords.x, shop.coords.y, shop.coords.z - 1.0, shop.coords.w, false, false)
+    SetModelAsNoLongerNeeded(model)
+    SetRandomOutfitVariation(ped, true)
+    SetEntityInvincible(ped, true)
+    SetBlockingOfNonTemporaryEvents(ped, true)
+    FreezeEntityPosition(ped, true)
+    SetEntityAsMissionEntity(ped, true, true)
+    spawnedPeds[shop.id] = ped
+end
+
 CreateThread(function()
     while true do
         Wait(1000)
         for _, shop in pairs(shopsById) do
+            if registeredInteractions[shop.id] then
+                updateShopNpc(shop)
+            end
             if shop.blip and shop.blip.handle then
                 local open = IsStoreOpen(shop)
                 if shop.blip.open ~= open then
@@ -272,33 +325,7 @@ local function registerShopInteraction(shop)
     })
     shopZones[#shopZones + 1] = zone
 
-    if shop.npc == false then return end
-
-    if not shop.npcmodel then
-        print(('[rsg-stores] WARNING: shop "%s" has no npcmodel set -- NPC will not be spawned.'):format(shop.id))
-        return
-    end
-    local model = joaat(shop.npcmodel)
-    RequestModel(model)
-    local attempts = 0
-    while not HasModelLoaded(model) and attempts < 100 do
-        Wait(10)
-        attempts = attempts + 1
-    end
-
-    if not HasModelLoaded(model) then
-        print(('[rsg-stores] WARNING: ped model "%s" for shop "%s" failed to load -- NPC will not be spawned.'):format(shop.npcmodel, shop.id))
-        return
-    end
-
-    local ped = CreatePed(model, shop.coords.x, shop.coords.y, shop.coords.z - 1.0, shop.coords.w, false, false)
-    SetModelAsNoLongerNeeded(model)
-    SetRandomOutfitVariation(ped, true)
-    SetEntityInvincible(ped, true)
-    SetBlockingOfNonTemporaryEvents(ped, true)
-    FreezeEntityPosition(ped, true)
-    SetEntityAsMissionEntity(ped, true, true)
-    spawnedPeds[#spawnedPeds + 1] = ped
+    updateShopNpc(shop)
 end
 
 local function setupShop(shop)
@@ -382,7 +409,7 @@ AddEventHandler('onResourceStop', function(resource)
         RemoveBlip(blip)
     end
 
-    for _, ped in ipairs(spawnedPeds) do
+    for _, ped in pairs(spawnedPeds) do
         if DoesEntityExist(ped) then
             DeleteEntity(ped)
         end
