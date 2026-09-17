@@ -2,7 +2,7 @@ Config = {}
 
 Config.Hours = {
     open = 8,
-    close = 17,
+    close = 20,
     enable = true,
     unlockDuration = 30 * 1000,
 }
