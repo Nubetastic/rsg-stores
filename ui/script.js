@@ -4,6 +4,9 @@
     const shopSubtitle = document.getElementById('shopSubtitle');
     const buyTab = document.getElementById('buyTab');
     const sellTab = document.getElementById('sellTab');
+    const ownedFilter = document.getElementById('ownedFilter');
+    const ownedOnly = document.getElementById('ownedOnly');
+    const ownedOnlyLabel = document.getElementById('ownedOnlyLabel');
     const categoryRail = document.getElementById('categoryRail');
     const itemGrid = document.getElementById('itemGrid');
     const basketHeading = document.getElementById('basketHeading');
@@ -85,7 +88,7 @@
 
     function getCategories(forMode) {
         const section = getSection(forMode);
-        return (section && section.categories) || [];
+        return section && Array.isArray(section.categories) ? section.categories : [];
     }
 
     function getLimits(forMode) {
@@ -100,6 +103,14 @@
         return (shop && shop.sell && shop.sell.owned && shop.sell.owned[name]) || 0;
     }
 
+    function getItemCap(name) {
+        const { maxItemQuantity } = getLimits(mode);
+        const quantities = shop.stock;
+        const available = quantities && quantities[name] !== undefined ? quantities[name] : Infinity;
+        return mode === 'sell'
+            ? Math.min(maxItemQuantity, getOwned(name))
+            : Math.min(maxItemQuantity, available);
+    }
     function getBasket(forMode) {
         return baskets[forMode];
     }
@@ -111,6 +122,7 @@
         shopSubtitle.textContent = L.subtitle || '';
         buyTab.textContent = L.tabBuy || '';
         sellTab.textContent = L.tabSell || '';
+        ownedOnlyLabel.textContent = L.showOnlyOwned || '';
         closeBtn.title = L.close || '';
         basketHintPrefix.textContent = L.basketHintPrefix || '';
         basketHintSuffix.textContent = L.basketHintSuffix || '';
@@ -121,6 +133,7 @@
         buyTab.classList.toggle('active', mode === 'buy');
         sellTab.classList.toggle('active', mode === 'sell');
         sellTab.classList.toggle('hidden', !(shop && shop.sell));
+        ownedFilter.classList.toggle('hidden', mode !== 'sell');
     }
 
     function renderCategories() {
@@ -143,21 +156,32 @@
         const category = getCategories(mode).find((c) => c.id === activeCategoryId[mode]);
         if (!category) return;
 
-        category.items.forEach((item) => {
+        (Array.isArray(category.items) ? category.items : []).forEach((item) => {
+            if (mode === 'sell' && ownedOnly.checked && getOwned(item.name) <= 0) return;
             const card = document.createElement('div');
             card.className = 'item-card';
 
             const ownedLine = mode === 'sell'
                 ? `<div class="item-owned">${escapeHtml(L.ownedPrefix || '')} ${getOwned(item.name)}</div>`
                 : '';
-            const disabled = mode === 'sell' && getOwned(item.name) <= 0 ? 'disabled' : '';
+            const quantities = shop.stock;
+            const quantity = quantities && quantities[item.name];
+            const stockLine = mode === 'buy' && quantity !== undefined
+                ? `<div class="item-owned">${escapeHtml(L.stockPrefix)} ${quantity}</div>`
+                : '';
+            const disabled = getItemCap(item.name) <= 0 ? 'disabled' : '';
             const buttonLabel = mode === 'sell' ? (L.sellButton || '') : (L.addToBasket || '');
 
             card.innerHTML = `
-                <div class="item-icon-wrap"><img src="${escapeHtml(item.image)}" onerror="this.style.visibility='hidden'"></div>
-                <div class="item-label">${escapeHtml(item.label)}</div>
-                <div class="item-price">$${fmtMoney(item.price)}</div>
-                ${ownedLine}
+                <div class="item-details">
+                    <div class="item-icon-wrap"><img src="${escapeHtml(item.image)}" onerror="this.style.visibility='hidden'"></div>
+                    <div class="item-info">
+                        <div class="item-label">${escapeHtml(item.label)}</div>
+                        <div class="item-price">$${fmtMoney(item.price)}</div>
+                        ${ownedLine}
+                        ${stockLine}
+                    </div>
+                </div>
                 <button class="add-btn" ${disabled}>${escapeHtml(buttonLabel)}</button>
             `;
             const addBtn = card.querySelector('.add-btn');
@@ -168,8 +192,9 @@
 
     function addToBasket(item) {
         const basket = getBasket(mode);
-        const { maxUniqueItems, maxItemQuantity } = getLimits(mode);
-        const cap = mode === 'sell' ? Math.min(maxItemQuantity, getOwned(item.name)) : maxItemQuantity;
+        const { maxUniqueItems } = getLimits(mode);
+        const cap = getItemCap(item.name);
+        if (cap <= 0) return;
 
         if (mode === 'sell' && getOwned(item.name) <= 0) {
             showToast(L.toastNoItemTitle, fmt(L.toastNoItem, item.label), 'error');
@@ -202,10 +227,9 @@
         const line = basket.get(name);
         if (!line) return;
 
-        const { maxItemQuantity } = getLimits(mode);
-        const cap = mode === 'sell' ? Math.min(maxItemQuantity, getOwned(name)) : maxItemQuantity;
+        const cap = getItemCap(name);
 
-        if (amount <= 0) {
+        if (amount <= 0 || cap <= 0) {
             basket.delete(name);
         } else {
             line.amount = Math.min(amount, cap);
@@ -286,7 +310,7 @@
         basket.forEach((line) => lines.push({ name: line.name, amount: line.amount }));
 
         checkoutBtn.disabled = true;
-        post(mode === 'sell' ? 'sellCheckout' : 'checkout', { basket: lines });
+        post(mode === 'sell' ? 'sellCheckout' : 'checkout', { basket: lines, revision: shop.revision });
     }
 
     function switchMode(newMode) {
@@ -305,14 +329,26 @@
         renderBasket();
     }
 
-    function open(data) {
+    function open(data, refresh = false) {
+        const previousMode = mode;
+        const previousCategories = { ...activeCategoryId };
         shop = data;
         L = data.locale || L;
-        mode = !shop.categories.length && shop.sell ? 'sell' : 'buy';
+        if (!Array.isArray(shop.categories)) shop.categories = [];
+        if (shop.sell && !Array.isArray(shop.sell.categories)) shop.sell.categories = [];
+        mode = refresh && (previousMode !== 'sell' || shop.sell)
+            ? previousMode : (!shop.categories.length && shop.sell ? 'sell' : 'buy');
         baskets.buy.clear();
         baskets.sell.clear();
         activeCategoryId.buy = shop.categories.length ? shop.categories[0].id : null;
         activeCategoryId.sell = (shop.sell && shop.sell.categories.length) ? shop.sell.categories[0].id : null;
+        if (refresh) {
+            ['buy', 'sell'].forEach((direction) => {
+                if (getCategories(direction).some((category) => category.id === previousCategories[direction])) {
+                    activeCategoryId[direction] = previousCategories[direction];
+                }
+            });
+        }
 
         shopTitle.textContent = shop.label;
 
@@ -337,6 +373,7 @@
     checkoutBtn.addEventListener('click', checkout);
     buyTab.addEventListener('click', () => switchMode('buy'));
     sellTab.addEventListener('click', () => switchMode('sell'));
+    ownedOnly.addEventListener('change', renderGrid);
 
     document.addEventListener('keyup', (e) => {
         if (e.key === 'Escape' && !app.classList.contains('hidden')) {
@@ -350,6 +387,8 @@
 
         if (data.action === 'open') {
             open(data.shop);
+        } else if (data.action === 'refresh') {
+            if (shop && shop.id === data.shop.id) open(data.shop, true);
         } else if (data.action === 'close') {
             close();
         } else if (data.action === 'checkoutResult') {
