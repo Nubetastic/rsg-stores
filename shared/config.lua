@@ -35,6 +35,31 @@ Config.MaxSellQuantity = 99
 -- can't open a shop, walk away, and keep buying/selling remotely.
 Config.MaxInteractDistance = 2.5
 
+-- Global toggle for limited-stock items in configured and custom shops.
+-- When enabled, each item's starting amount is saved as its target stock.
+-- Purchases, sales, and exported stock updates do not change that target.
+-- On each scheduled restock tick:
+--   Below target: add the item's restock quantity, up to maxStock.
+--   At/above target through maxStock: 50/50 chance to add or remove restock.
+--   Above maxStock: only reduce stock, using OverstockReduction tiers below.
+-- Random increases stop at maxStock; decreases stop at zero and may fall
+-- below target, causing the next tick to increase stock. At maxStock, a
+-- randomly selected increase leaves stock unchanged.
+-- Example: amount = 10, maxStock = 50, restock = 5.
+-- Stock 5 becomes 10; stock 20 becomes 15 or 25; stock 50 becomes 45 or 50.
+-- When disabled, stock at/below maxStock always increases toward maxStock.
+-- Above-max reductions apply in either mode. Omitted/zero restock skips
+-- the item; omitted/zero shop restockTime disables scheduled restocking.
+Config.TargetStock = true
+
+-- Compare excess stock / restock against these tiers, in ascending order.
+-- Reduction is restock * multiplier, rounded to whole items, stopping at maxStock.
+Config.OverstockReduction = {
+    { maxRatio = 2, multiplier = 1.5 },
+    { maxRatio = 4, multiplier = 2 },
+    { maxRatio = math.huge, multiplier = 3 }, -- all higher ratios
+}
+
 -- ---------------------------------------------------------------------------
 -- Dynamic pricing: every unit a player buys nudges that item's price UP at
 -- that shop, and every unit sold back nudges it back DOWN -- the same

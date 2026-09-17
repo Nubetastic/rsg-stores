@@ -407,9 +407,6 @@ Config.Shops = {
             show = false,
         },
         money = 'cash',
-        dynamicPricing = {
-            enabled = false,
-        },
         buy = {{'Horse Tools', 0.0}, {'Horse Food', 0.0}},
         sell = {},
     },
@@ -429,9 +426,6 @@ Config.Shops = {
             show = false,
         },
         money = 'cash',
-        dynamicPricing = {
-            enabled = false,
-        },
         buy = {{'Horse Tools', 0.0}, {'Horse Food', 0.0}},
         sell = {},
     },
@@ -451,9 +445,6 @@ Config.Shops = {
             show = false,
         },
         money = 'cash',
-        dynamicPricing = {
-            enabled = false,
-        },
         buy = {{'Horse Tools', 0.0}, {'Horse Food', 0.0}},
         sell = {},
     },
@@ -473,9 +464,6 @@ Config.Shops = {
             show = false,
         },
         money = 'cash',
-        dynamicPricing = {
-            enabled = false,
-        },
         buy = {{'Horse Tools', 0.0}, {'Horse Food', 0.0}},
         sell = {},
     },
@@ -495,9 +483,6 @@ Config.Shops = {
             show = false,
         },
         money = 'cash',
-        dynamicPricing = {
-            enabled = false,
-        },
         buy = {{'Horse Tools', 0.0}, {'Horse Food', 0.0}},
         sell = {},
     },
@@ -517,9 +502,6 @@ Config.Shops = {
             show = false,
         },
         money = 'cash',
-        dynamicPricing = {
-            enabled = false,
-        },
         buy = {{'Horse Tools', 0.0}, {'Horse Food', 0.0}},
         sell = {},
     },
@@ -539,9 +521,6 @@ Config.Shops = {
             show = false,
         },
         money = 'cash',
-        dynamicPricing = {
-            enabled = false,
-        },
         buy = {{'Horse Tools', 0.0}, {'Horse Food', 0.0}},
         sell = {},
     },
@@ -562,9 +541,6 @@ Config.Shops = {
             label = 'Rhodes General Store',
         },
         money = 'cash',
-        dynamicPricing = {
-            enabled = true,
-        },
         buy = {{'Food', 0.0}, {'Tools', 0.0}, {'Fishing', 0.0}},
         sell = {{'Food', 0.0}, {'Tools', 0.0}, {'Herbs', 0.0}},
     },
@@ -585,11 +561,6 @@ Config.Shops = {
             label = 'Valentine General Store',
         },
         money = 'cash',
-        dynamicPricing = {
-            enabled = true,
-            increasePerUnit = 0.0,
-            decreasePerUnit = 0.0,
-        },
         buy = {{'Food', 0.0}, {'Tools', 0.0}, {'Fishing', 0.0}},
         sell = {{'Food', 0.0}, {'Tools', 0.0}, {'Herbs', 0.0}},
     },
@@ -610,9 +581,6 @@ Config.Shops = {
             label = 'Strawberry General Store',
         },
         money = 'cash',
-        dynamicPricing = {
-            enabled = true,
-        },
         buy = {{'Food', 0.0}, {'Tools', 0.0}, {'Fishing', 0.0}},
         sell = {{'Food', 0.0}, {'Tools', 0.0}, {'Herbs', 0.0}},
     },
@@ -633,9 +601,6 @@ Config.Shops = {
             label = 'Saint Denis General Store',
         },
         money = 'cash',
-        dynamicPricing = {
-            enabled = true,
-        },
         buy = {{'Food', 0.0}, {'Tools', 0.0}, {'Fishing', 0.0}},
         sell = {{'Food', 0.0}, {'Tools', 0.0}, {'Herbs', 0.0}},
     },
@@ -656,9 +621,6 @@ Config.Shops = {
             label = 'Tumbleweed General Store',
         },
         money = 'cash',
-        dynamicPricing = {
-            enabled = true,
-        },
         buy = {{'Food', 0.0}, {'Tools', 0.0}, {'Fishing', 0.0}},
         sell = {{'Food', 0.0}, {'Tools', 0.0}, {'Herbs', 0.0}},
     },
@@ -679,9 +641,6 @@ Config.Shops = {
             label = 'Armadillo General Store',
         },
         money = 'cash',
-        dynamicPricing = {
-            enabled = true,
-        },
         buy = {{'Food', 0.0}, {'Tools', 0.0}, {'Fishing', 0.0}},
         sell = {{'Food', 0.0}, {'Tools', 0.0}, {'Herbs', 0.0}},
     },
@@ -702,9 +661,6 @@ Config.Shops = {
             label = 'Blackwater General Store',
         },
         money = 'cash',
-        dynamicPricing = {
-            enabled = true,
-        },
         buy = {{'Food', 0.0}, {'Tools', 0.0}, {'Fishing', 0.0}},
         sell = {{'Food', 0.0}, {'Tools', 0.0}, {'Herbs', 0.0}},
     },
@@ -725,9 +681,6 @@ Config.Shops = {
             label = 'Van Horn General Store',
         },
         money = 'cash',
-        dynamicPricing = {
-            enabled = true,
-        },
         buy = {{'Food', 0.0}, {'Tools', 0.0}, {'Fishing', 0.0}},
         sell = {{'Food', 0.0}, {'Tools', 0.0}, {'Herbs', 0.0}},
     },
@@ -748,11 +701,6 @@ Config.Shops = {
             label = 'Valentine Gunsmith',
         },
         money = 'cash',
-        dynamicPricing = {
-            enabled = true,
-            increasePerUnit = 0.05, -- ammo/weapons swing a bit faster than general goods
-            decreasePerUnit = 0.05,
-        },
         buy = {{'Weapons', 0.0}, {'Ammunition', 0.0}, {'Weapon Care', 0.0}},
         sell = {{'Weapons', 0.0}, {'Ammunition', 0.0}, {'Weapon Care', 0.0}},
     },
@@ -773,11 +721,6 @@ Config.Shops = {
             label = 'Tumbleweed Gunsmith',
         },
         money = 'cash',
-        dynamicPricing = {
-            enabled = true,
-            increasePerUnit = 0.05, -- ammo/weapons swing a bit faster than general goods
-            decreasePerUnit = 0.05,
-        },
         buy = {{'Weapons', 0.0}, {'Ammunition', 0.0}, {'Weapon Care', 0.0}},
         sell = {{'Weapons', 0.0}, {'Ammunition', 0.0}, {'Weapon Care', 0.0}},
     },
@@ -798,11 +741,6 @@ Config.Shops = {
             label = 'Saint Denis Gunsmith',
         },
         money = 'cash',
-        dynamicPricing = {
-            enabled = true,
-            increasePerUnit = 0.05, -- ammo/weapons swing a bit faster than general goods
-            decreasePerUnit = 0.05,
-        },
         buy = {{'Weapons', 0.0}, {'Ammunition', 0.0}, {'Weapon Care', 0.0}},
         sell = {{'Weapons', 0.0}, {'Ammunition', 0.0}, {'Weapon Care', 0.0}},
     },
@@ -823,11 +761,6 @@ Config.Shops = {
             label = 'Rhodes Gunsmith',
         },
         money = 'cash',
-        dynamicPricing = {
-            enabled = true,
-            increasePerUnit = 0.05, -- ammo/weapons swing a bit faster than general goods
-            decreasePerUnit = 0.05,
-        },
         buy = {{'Weapons', 0.0}, {'Ammunition', 0.0}, {'Weapon Care', 0.0}},
         sell = {{'Weapons', 0.0}, {'Ammunition', 0.0}, {'Weapon Care', 0.0}},
     },
@@ -848,11 +781,6 @@ Config.Shops = {
             label = 'Annesburg Gunsmith',
         },
         money = 'cash',
-        dynamicPricing = {
-            enabled = true,
-            increasePerUnit = 0.05, -- ammo/weapons swing a bit faster than general goods
-            decreasePerUnit = 0.05,
-        },
         buy = {{'Weapons', 0.0}, {'Ammunition', 0.0}, {'Weapon Care', 0.0}},
         sell = {{'Weapons', 0.0}, {'Ammunition', 0.0}, {'Weapon Care', 0.0}},
     },
@@ -878,9 +806,6 @@ Config.Shops = {
             label = 'Blackwater Saloon',
         },
         money = 'cash',
-        dynamicPricing = {
-            enabled = false,
-        },
         buy = {{'Saloon', 0.0}},
         sell = {},
     },
@@ -904,9 +829,6 @@ Config.Shops = {
             label = 'Valentine Saloon',
         },
         money = 'cash',
-        dynamicPricing = {
-            enabled = false,
-        },
         buy = {{'Saloon', 0.0}},
         sell = {},
     },
@@ -932,9 +854,6 @@ Config.Shops = {
             label = 'La Bastille Saloon',
         },
         money = 'cash',
-        dynamicPricing = {
-            enabled = false,
-        },
         buy = {{'Saloon', 0.0}},
         sell = {},
     },
@@ -960,9 +879,6 @@ Config.Shops = {
             label = 'Rhodes Saloon',
         },
         money = 'cash',
-        dynamicPricing = {
-            enabled = false,
-        },
         buy = {{'Saloon', 0.0}},
         sell = {},
     },
@@ -988,9 +904,6 @@ Config.Shops = {
             label = 'Old Light Saloon',
         },
         money = 'cash',
-        dynamicPricing = {
-            enabled = false,
-        },
         buy = {{'Saloon', 0.0}},
         sell = {},
     },
@@ -1016,9 +929,6 @@ Config.Shops = {
             label = 'Tumbleweed Saloon',
         },
         money = 'cash',
-        dynamicPricing = {
-            enabled = false,
-        },
         buy = {{'Saloon', 0.0}},
         sell = {},
     },
@@ -1039,9 +949,6 @@ Config.Shops = {
             label = 'Thieves Landing Fence',
         },
         money = 'cash',
-        dynamicPricing = {
-            enabled = false,
-        },
         buy = {{'Fence Weapons', 0.0}},
         sell = {{'Fence Weapons', 0.0}, {'Valuables', 0.0}},
     },
@@ -1062,9 +969,6 @@ Config.Shops = {
             label = 'Emerald Ranch Fence',
         },
         money = 'cash',
-        dynamicPricing = {
-            enabled = false,
-        },
         buy = {{'Fence Weapons', 0.0}},
         sell = {{'Fence Weapons', 0.0}, {'Valuables', 0.0}},
     },
@@ -1085,9 +989,6 @@ Config.Shops = {
             label = 'Rhodes Fence',
         },
         money = 'cash',
-        dynamicPricing = {
-            enabled = false,
-        },
         buy = {{'Fence Weapons', 0.0}},
         sell = {{'Fence Weapons', 0.0}, {'Valuables', 0.0}},
     },
@@ -1108,9 +1009,6 @@ Config.Shops = {
             label = 'Saint Denis Fence',
         },
         money = 'cash',
-        dynamicPricing = {
-            enabled = false,
-        },
         buy = {{'Fence Weapons', 0.0}},
         sell = {{'Fence Weapons', 0.0}, {'Valuables', 0.0}},
     },
@@ -1131,9 +1029,6 @@ Config.Shops = {
             label = 'Saint Denis Doctor',
         },
         money = 'cash',
-        dynamicPricing = {
-            enabled = false,
-        },
         buy = {{'Medicine', 0.0}},
         sell = {},
     },
@@ -1154,9 +1049,6 @@ Config.Shops = {
             label = 'Rhodes Doctor',
         },
         money = 'cash',
-        dynamicPricing = {
-            enabled = false,
-        },
         buy = {{'Medicine', 0.0}},
         sell = {},
     },
@@ -1177,9 +1069,6 @@ Config.Shops = {
             label = 'Valentine Doctor',
         },
         money = 'cash',
-        dynamicPricing = {
-            enabled = false,
-        },
         buy = {{'Medicine', 0.0}},
         sell = {},
     },
@@ -1200,9 +1089,6 @@ Config.Shops = {
             label = 'Armadillo Doctor',
         },
         money = 'cash',
-        dynamicPricing = {
-            enabled = false,
-        },
         buy = {{'Medicine', 0.0}},
         sell = {},
     },
@@ -1223,9 +1109,6 @@ Config.Shops = {
             label = 'Strawberry Doctor',
         },
         money = 'cash',
-        dynamicPricing = {
-            enabled = false,
-        },
         buy = {{'Medicine', 0.0}},
         sell = {},
     },
@@ -1246,9 +1129,6 @@ Config.Shops = {
             label = 'Valentine Butcher',
         },
         money = 'cash',
-        dynamicPricing = {
-            enabled = false,
-        },
         buy = {},
         sell = {{'Animal Parts', 0.0}, {'Fish', 0.0}, {'Pelts', 0.0}, {'Legendary', 0.0}},
     },
@@ -1269,9 +1149,6 @@ Config.Shops = {
             label = 'St Denis Butcher',
         },
         money = 'cash',
-        dynamicPricing = {
-            enabled = false,
-        },
         buy = {},
         sell = {{'Animal Parts', 0.0}, {'Fish', 0.0}, {'Pelts', 0.0}, {'Legendary', 0.0}},
     },
@@ -1292,9 +1169,6 @@ Config.Shops = {
             label = 'Rhodes Butcher',
         },
         money = 'cash',
-        dynamicPricing = {
-            enabled = false,
-        },
         buy = {},
         sell = {{'Animal Parts', 0.0}, {'Fish', 0.0}, {'Pelts', 0.0}, {'Legendary', 0.0}},
     },
@@ -1315,9 +1189,6 @@ Config.Shops = {
             label = 'Annesburg Butcher',
         },
         money = 'cash',
-        dynamicPricing = {
-            enabled = false,
-        },
         buy = {},
         sell = {{'Animal Parts', 0.0}, {'Fish', 0.0}, {'Pelts', 0.0}, {'Legendary', 0.0}},
     },
@@ -1338,9 +1209,6 @@ Config.Shops = {
             label = 'Tumbleweed Butcher',
         },
         money = 'cash',
-        dynamicPricing = {
-            enabled = false,
-        },
         buy = {},
         sell = {{'Animal Parts', 0.0}, {'Fish', 0.0}, {'Pelts', 0.0}, {'Legendary', 0.0}},
     },
@@ -1361,9 +1229,6 @@ Config.Shops = {
             label = 'Blackwater Butcher',
         },
         money = 'cash',
-        dynamicPricing = {
-            enabled = false,
-        },
         buy = {},
         sell = {{'Animal Parts', 0.0}, {'Fish', 0.0}, {'Pelts', 0.0}, {'Legendary', 0.0}},
     },
@@ -1384,9 +1249,6 @@ Config.Shops = {
             label = 'Strawberry Butcher',
         },
         money = 'cash',
-        dynamicPricing = {
-            enabled = false,
-        },
         buy = {},
         sell = {{'Animal Parts', 0.0}, {'Fish', 0.0}, {'Pelts', 0.0}, {'Legendary', 0.0}},
     },
@@ -1407,9 +1269,6 @@ Config.Shops = {
             label = 'Van Horn Butcher',
         },
         money = 'cash',
-        dynamicPricing = {
-            enabled = false,
-        },
         buy = {},
         sell = {{'Animal Parts', 0.0}, {'Fish', 0.0}, {'Pelts', 0.0}, {'Legendary', 0.0}},
     },
@@ -1435,9 +1294,6 @@ Config.Shops = {
             label = 'New Hanover Shine',
         },
         money = 'cash',
-        dynamicPricing = {
-            enabled = false,
-        },
         buy = {{'Moonshine', 0.0}},
         sell = {},
     },
@@ -1463,9 +1319,6 @@ Config.Shops = {
             label = 'Amberino Shine',
         },
         money = 'cash',
-        dynamicPricing = {
-            enabled = false,
-        },
         buy = {{'Moonshine', 0.0}},
         sell = {},
     },
@@ -1491,9 +1344,6 @@ Config.Shops = {
             label = 'Lemoyne Shine',
         },
         money = 'cash',
-        dynamicPricing = {
-            enabled = false,
-        },
         buy = {{'Moonshine', 0.0}},
         sell = {},
     },
@@ -1519,9 +1369,6 @@ Config.Shops = {
             label = 'New Austin Shine',
         },
         money = 'cash',
-        dynamicPricing = {
-            enabled = false,
-        },
         buy = {{'Moonshine', 0.0}},
         sell = {},
     },
@@ -1547,9 +1394,6 @@ Config.Shops = {
             label = 'West Elizabeth Shine',
         },
         money = 'cash',
-        dynamicPricing = {
-            enabled = false,
-        },
         buy = {{'Moonshine', 0.0}},
         sell = {},
     },
@@ -1567,9 +1411,6 @@ Config.Shops = {
             label = 'Annesburg General Store',
         },
         money = 'cash',
-        dynamicPricing = {
-            enabled = true,
-        },
         buy = {{'Food', 0.0}, {'Tools', 0.0}},
         sell = {{'Herbs', 0.0}, {'Food', 0.0}},
     },

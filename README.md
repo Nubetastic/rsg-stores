@@ -1,22 +1,19 @@
 # rsg-stores
 
-A configurable general store / gunsmith resource for **RSG-Core** on **RedM**, with a custom NUI storefront, live server-side pricing, optional Discord logging, and full ox_lib locale support.
+A configurable shop resource for **RSG-Core** on **RedM**, with a buy/sell NUI, store hours, external shop exports, optional limited stock, and dynamic pricing.
 
 ---
 
 ## Features
 
-- **Custom NUI storefront** — a themed buy/sell menu (category rail, item grid, running basket) opened via `ox_target`, opened through an ox_target box zone at each shop, independently of its optional NPC.
-- **Buy and sell tabs** — each shop defines its own buy catalog, and can optionally define a separate sell-back catalog (`shop.sell`). Shops without a `sell` block simply don't show a Sell tab.
-- **Server-authoritative pricing and validation** — the client never sets a price. Every basket line is re-validated and re-priced from the configured item groups or registered custom shop state on the server before anything is charged, added, or removed, so a modified client can't manipulate totals.
-- **Dynamic pricing (optional, per shop)** — every unit bought nudges that item's price up, every unit sold back nudges it down, pulling against each other. Tracked in memory per shop/item (resets on restart), with configurable rate and min/max multiplier clamps.
-- **Progressive per-basket pricing** — buying or selling several units of the same item in one checkout prices each unit along the dynamic curve, exactly as if you'd bought them one at a time.
-- **Accurate cent-level pricing** — supports sub-$1 item prices (e.g. $0.50 bread) with all totals rounded to the nearest cent, not the nearest dollar.
-- **Inventory-full protection** — if a purchased item won't fit in the player's inventory, that item's exact cost is refunded automatically rather than charging for nothing.
-- **Anti-exploit checks** — server-side proximity checks on every action (can't buy/sell by firing events from across the map), per-player request locking (can't double-submit a checkout), and basket validation that rejects malformed, duplicate, out-of-range, or non-finite quantities.
-- **Discord webhook logging (optional)** — every completed purchase and sale is posted to a Discord webhook as an embed (player name, citizenid, items, total), queued and rate-limit safe. Fully disabled by default until you set a webhook URL.
-- **Full ox_lib locale support** — every player-facing string (notifications, NUI text, toasts) and every Discord embed string lives in `locales/en.json`, ready to translate or reword without touching any code.
-- **Blips and NPC peds** — each shop can optionally spawn an NPC and show a map blip; interaction uses a zone.
+- **Buy/sell storefront** with categories, baskets, larger item displays, and a remembered **Show only owned items** filter on Sell.
+- **Store hours and doors** with global or individual schedules, closed-store blips, NPC removal, and temporary exit unlocking.
+- **External shop exports** for registration, live price/stock updates, and stock-change tracking.
+- **Optional limited stock** for configured and custom shops, with scheduled restocking and gradual overstock reduction.
+- **Optional dynamic pricing** with global defaults and per-shop overrides. Multi-unit transactions price each unit progressively.
+- **Server-side validation** of prices, proximity, baskets, and owned quantities, with request locking and inventory-full refunds.
+- **Cent-level prices**, optional NPCs/blips, and queued Discord transaction logging.
+- **ox_lib locales** for the storefront, transaction notifications, and webhook text.
 
 ---
 
@@ -61,17 +58,34 @@ Global settings live in `shared/config.lua`. Item groups and standard shops live
 
 | Setting | Default | Description |
 |---|---|---|
-| `Config.Money` | `'cash'` | Default account type charged on checkout (`cash`, `bank`, `bloodmoney`, `gold`, ...). Overridable per shop. |
+| `Config.Money` | `'cash'` | Account used for purchases and sale payouts. Custom shops accept `cash`, `bank`, `bloodmoney`, or `gold`. Overridable per shop. |
 | `Config.Img` | `'rsg-inventory/html/images/'` | Where item icons are loaded from. Change if your inventory resource's image folder differs. |
 | `Config.MaxUniqueBasketItems` | `10` | Max number of *different* items in a buy basket at once. |
 | `Config.MaxItemQuantity` | `99` | Max quantity of a single item per basket line (buying). |
 | `Config.MaxUniqueSellItems` | `10` | Same as above, for the Sell tab. |
 | `Config.MaxSellQuantity` | `99` | Max quantity of a single item per basket line (selling). |
-| `Config.MaxInteractDistance` | `3.0` | Max distance a player may be from a shop when the server processes any shop action. Keep this in sync with your interaction distance so players can't walk away and keep buying remotely. |
+| `Config.MaxInteractDistance` | `2.5` | Target interaction and exit-unlock distance. Server proximity checks allow an additional 3 units of movement/latency tolerance. |
+
+### Store hours and doors
+
+`Config.Hours` sets the global schedule: `open = 8`, `close = 20`, `enable = true`, and `unlockDuration = 30 * 1000` (milliseconds). Disabling `enable` keeps all shops open.
+
+Standard and custom shops use the same optional fields. Add them to a `Config.Shops` entry or the shop table passed to `RegisterCustomShop`:
+
+```lua
+shop.Hours = { open = 9, close = 21 }
+shop.Doors = { 972368328, 1060413677 } -- use the door IDs for your location
+```
+
+Omit `Hours` to follow the global schedule. Use `Hours = { alwaysOpen = true }` for an always-open shop. Opening and closing hours must be whole numbers from 0 to 23; overnight schedules are supported. Opening is inclusive and closing is exclusive. `Doors` is an optional sequential list of whole-number RedM door IDs; omit it or use an empty list for no door management.
+
+Closed shops disable their target interaction, turn their blip red, remove their resource-spawned NPC, and lock configured doors. Approaching the interaction area within `Config.MaxInteractDistance` temporarily unlocks those doors for the global `unlockDuration` and shows an ox_lib notification. This checks proximity rather than whether the player is inside. Door IDs and behavior should be verified in-game.
+
+Custom-shop settings are established at registration; re-registration and item updates do not change hours or doors. **Current limitation:** closing disables target interaction but does not close an open menu or enforce hours on `OpenShop` or server transactions.
 
 ### Dynamic pricing
 
-`Config.DynamicPricing` sets the resource-wide defaults; standard shops can override individual fields with its own `dynamicPricing = { ... }` table.
+`Config.DynamicPricing` supplies defaults for standard and custom shops. The included configured shops inherit these settings; dynamic pricing is globally disabled by default.
 
 ```lua
 Config.DynamicPricing = {
@@ -83,7 +97,11 @@ Config.DynamicPricing = {
 }
 ```
 
-All percent fields are **percentage points**, not fractions (`5` = 5%, not 500%). The multiplier is in-memory only and resets to `1.0x` on resource/server restart — it is not persisted to a database.
+Rates are **percentage points**: `0.02` means 0.02%, and `5` means 5%. Buying raises an item's shared buy/sell multiplier; selling lowers it. Multipliers are held in memory per shop/item and reset to `1.0x` when rsg-stores restarts.
+
+To override a shop, add `dynamicPricing = { enabled = true, increasePerUnit = 0.05 }`. Omitted fields inherit global values. Set `enabled = false` to disable it even when globally enabled, or `true` to enable it when globally disabled. Zero rates cause no movement.
+
+Custom-shop item prices are base prices before the multiplier. Exported price updates retain the current multiplier; re-registration retains the shop's dynamic pricing settings.
 
 ### Discord webhook logging
 
@@ -97,7 +115,7 @@ Config.Webhooks = {
 }
 ```
 
-Leave `url` empty (the default) to disable logging completely — no HTTP requests are ever made. When set, every completed purchase and sale posts an embed to that channel with the player's name/citizenid, items, and total. Messages are queued and sent one at a time to stay well under Discord's webhook rate limit, even if several players check out at once.
+Leave `url` empty to disable logging. When configured, completed purchases and sales post queued embeds containing the player's name, citizenid, items, and total.
 
 ### Item groups and standard shops
 
@@ -130,21 +148,19 @@ Config.Shops = {
             label = 'Rhodes General Store',
         },
         money = 'cash',
-        dynamicPricing = { enabled = false },
         buy = {{'Food', 0.05}},
         sell = {{'Food', -0.01}},
     },
 }
 ```
 
-Add groups and shops to the existing tables when editing the included configuration. Each `buy` or `sell` entry is `{groupName, adjustment}`. The adjustment is a flat currency amount added to each item's price in that group for that direction, not a percentage. In this example, bread costs 0.25 to buy and pays 0.04 to sell before any dynamic pricing. Adjusted base prices have a minimum of 0.01. There is no separate `regionalPrice` table or nested `categories` block.
+Add groups and shops to the existing tables. Each `buy` or `sell` entry is `{groupName, adjustment}`: a flat currency adjustment to that group's prices for that direction. Above, bread costs 0.25 to buy and pays 0.04 to sell before dynamic pricing. Adjusted base prices have a minimum of 0.01.
 
 - `id` identifies the shop and must be unique; `label` is its NUI title.
 - `coords` is the target zone centre and heading. NPCs spawn at z - 1.0.
 - `npc = false` disables the NPC. `npc = true` requires a valid `npcmodel`. The target zone is created independently of NPC spawning.
 - `blip.show` controls the map blip; `sprite` uses the configured RedM blip name.
 - `money` overrides `Config.Money` for both purchases and sale payouts.
-- `dynamicPricing` overrides global defaults for a standard shop. Zero increase/decrease rates produce no movement even when enabled.
 - An item needs a price for the relevant direction to appear on that tab. Omit a direction's price to exclude it.
 - `buy = {}` creates a sell-only shop and opens Sell by default when a sell list is available. `sell = {}` creates a buy-only shop without a Sell tab.
 - The Sell tab's **Show only owned items** checkbox hides items the player owns zero of and retains its preference across reopening.
@@ -153,15 +169,30 @@ Add groups and shops to the existing tables when editing the included configurat
 
 | Type | Setup | Pricing and inventory |
 |---|---|---|
-| Standard configured shop | `Config.Shops` and `Config.ItemGroups` in `shared/configShops.lua` | Shared base prices, per-group flat adjustments, optional dynamic pricing, unlimited store stock. |
-| Custom shop with unlimited stock | Server `RegisterCustomShop` export; omit item `amount` | Supplied final prices, unlimited store inventory, no stock depletion or restocking; dynamic pricing disabled. |
-| Custom shop with finite stock | Server `RegisterCustomShop` export; set item `amount` and `maxStock` | Supplied final prices, tracked stock, optional scheduled restocking, and a soft restocking cap; dynamic pricing disabled. |
+| Standard configured shop | `Config.Shops` and `Config.ItemGroups` in `shared/configShops.lua` | Group base prices, per-group adjustments, optional dynamic pricing, and finite or unlimited stock tracked separately per shop. |
+| Custom shop with unlimited stock | Server `RegisterCustomShop` export; omit item `amount` | Supplied base prices, optional dynamic pricing, unlimited store inventory, no stock depletion or restocking. |
+| Custom shop with finite stock | Server `RegisterCustomShop` export; set item `amount` and `maxStock` | Supplied base prices, optional dynamic pricing, tracked stock, optional scheduled restocking, and a soft restocking cap. |
 
 General stores, gunsmiths, doctors, and other themed stores are built by choosing their groups. They do not need separate shop-type flags. Both standard and custom shops can be buy-only, sell-only, or buy/sell, and use the same NUI and target zones.
 
-### Custom shop stock and restocking
+### Shop stock and restocking
 
-An external resource such as nt_trader supplies its shop and group tables when registering. Custom `buy` and `sell` references use `{groupName, 0}` because their prices are supplied directly.
+Configured and custom shops use the same item stock fields and shop-level restock interval. Both accept `{groupName, adjustment}` buy/sell references; use an adjustment of `0` to leave the supplied base price unchanged.
+
+For a configured shop, add stock fields to an item in `Config.ItemGroups` and set `restockTime` on each shop that should restock it:
+
+```lua
+-- Inside a Config.ItemGroups category's items list:
+{ name = 'bread', buyPrice = 0.20, sellPrice = 0.05,
+    amount = 10, maxStock = 20, restock = 5 },
+
+-- Inside the corresponding Config.Shops entry:
+restockTime = 15, -- minutes
+```
+
+Each shop using that group gets its own stock copy, initialized from `amount`. Sales and purchases at one store do not change another store's stock. To give stores different starting stock settings, define separate item groups. The included config omits stock fields and remains unlimited.
+
+External resources supply their own shop/group tables to `RegisterCustomShop`, as shown below. Only registered custom shops support exported price/stock updates; configured shops change through transactions, dynamic pricing, and restocking.
 
 #### Without stock limits
 
@@ -206,24 +237,33 @@ shop.restockTime = 15 -- minutes
 local success, reason = exports['rsg-stores']:RegisterCustomShop(shop, itemGroups)
 ```
 
-These examples are alternatives for a store's setup. Stock mode is chosen per item, so a custom shop can also mix finite and unlimited items. Basket limits and player-owned sale quantities apply to both modes. `maxStock` limits restocking; it does not reject player sales above that amount.
+These examples are alternative setups. Both shop types can mix finite and unlimited items. Basket limits and player-owned sale quantities apply to both modes. `maxStock` limits restocking; it does not reject player sales above that amount.
 
 #### Restocking rules
 
-```lua
--- Item inside an external resource's group:
-{ name = 't_hay', buyPrice = 15.00, sellPrice = 8.00,
-    amount = 10, maxStock = 50, restock = 15 }
+Finite items require nonnegative whole `amount` and `maxStock`; optional `restock` is also a nonnegative whole quantity. Purchases reduce stock and cannot exceed availability; sales increase it, even above the soft cap. Omitted/zero `restockTime` disables scheduled restocking for the shop.
 
--- Setting on that external shop:
-restockTime = 15, -- minutes; omitted/zero disables scheduled restocking
-```
+`Config.TargetStock = true` globally enables target-based restocking for limited-stock items in both shop types. Their starting `amount` is saved as the target; later transactions, exported stock updates, and re-registration do not change it. Use a starting amount at or below `maxStock`. Unlimited items are unaffected.
 
-Omit `amount` for unlimited stock. Finite items require nonnegative whole `amount` and `maxStock`; `restock` is a nonnegative whole quantity. Purchases reduce stock and cannot exceed availability. Player sales increase stock and may exceed `maxStock`, which is a soft restocking cap. Player-owned quantities and the global basket limits still apply to sales.
+With target stock enabled, each scheduled tick follows these rules:
 
-On each scheduled tick, an item with positive `restock` gains that quantity up to `maxStock` when at or below the cap. When above the cap, its amount becomes `math.max(0, maxStock - restock * 3)`. For maxStock 50 and restock 15, overstock becomes 5. The cap itself stays 50. Omitted/zero `restock` skips scheduled changes for that item.
+- **Below target:** add `restock`, capped at `maxStock`.
+- **From target through max:** a 50/50 choice adds or removes `restock`, with the result kept between zero and `maxStock`. A decrease can take stock below target; the next tick then increases it. At max, an increase leaves stock unchanged.
+- **Above max:** only reduce stock using the overstock tiers below.
 
-Stock is held in memory. rsg-stores does not implement `persistentStock` or database persistence; an external resource can track and restore its own economy state.
+Set `Config.TargetStock = false` to disable target behavior globally and always add `restock` up to `maxStock` when at or below the cap. There is no per-shop toggle.
+
+Above the cap, `Config.OverstockReduction` compares excess stock to the restock quantity and subtracts a larger quantity from current stock:
+
+| Excess stock / restock | Reduction |
+|---|---|
+| Up to 2 | restock * 1.5 |
+| Above 2, up to 4 | restock * 2 |
+| Above 4 | restock * 3 |
+
+Reductions round to the nearest whole item and stop at `maxStock`. With maxStock 20 and restock 5, stock 30 becomes 22, while stock 50 becomes 35. Tiers are checked in ascending order; `math.huge` means infinity, so the final tier covers all higher ratios. Omitted/zero `restock` skips that item.
+
+Stock is held in memory and resets to configured or registered amounts when rsg-stores restarts. Custom-shop owners can implement persistence through the stock event and exports; configured shops have no persistence/update interface.
 
 ### Exports and custom shop integration
 
@@ -234,7 +274,7 @@ Start rsg-stores before the external resource and add `dependency 'rsg-stores'` 
 | `RegisterCustomShop(shop, itemGroups)` | Server | Register a shop owned by the calling resource. Returns `true` or `false, reason`. |
 | `UpdateCustomShopItems(shopId, updates)` | Server | Set existing items' absolute stock and/or prices. Returns `true` or `false, reason`. |
 | `GetCustomShopItems(shopId)` | Server | Read a copied snapshot keyed by item name. Returns `items` or `nil, reason`. |
-| `OpenShop(shopId)` | Client | Start opening a known shop using the existing distance checks. Returns whether the asynchronous request started. |
+| `OpenShop(shopId)` | Client | Request opening a known shop. Returns whether the asynchronous request started, not whether opening succeeded. Server state requests check proximity. |
 | `rsg-stores:server:CustomShopStockChanged` | Server-local event | Report resulting stock after purchases, sales, restocking, or exported stock changes. |
 
 ```lua
@@ -249,9 +289,15 @@ local success, reason = exports['rsg-stores']:UpdateCustomShopItems(shop.id, {
 local items, reason = exports['rsg-stores']:GetCustomShopItems(shop.id)
 ```
 
-Only the owning resource can update or read a custom shop through the server exports. Editing the external config table after registration does not change the live shop; call the update export. Set `buyPrice = false` or `sellPrice = false` in an update to remove that price and hide the item from that tab. Set a numeric price of at least 0.01 to enable it again if its group is listed on that tab. Nil or omitted fields leave the live value unchanged. Updates cannot change categories, finite/unlimited mode, maxStock, restock, or shop settings. A busy shop rejects registration/update requests with a reason; the caller should retry in its next update cycle.
+Only the owning resource can update or read a custom shop. Editing its original config tables does not update the live shop; use the export.
 
-Re-registering an existing shop from its owner replaces its live `buyPrice`, `sellPrice`, and `amount` with the supplied values, including after restarting nt_trader. Existing settings, item membership, stock mode, and restock timing remain unchanged. Validation completes before applying the new values.
+- Updates accept only `amount`, `buyPrice`, and `sellPrice` for existing items. Stock amounts are absolute values, not increments.
+- Set a price to `false` to hide the item from that tab, or a number of at least `0.01` to show it again if its group is listed. Disable both directions to hide it completely. Nil/omitted fields stay unchanged.
+- Categories, item membership, stock mode, caps, restock settings, and other shop settings cannot be changed through item updates.
+- Registration requires at least one numeric price per item; `false` is supported only in updates.
+- Busy shops reject registration/updates with a reason. Retry on the resource's next update cycle.
+
+Re-registration replaces existing prices and amounts but preserves all other settings and requires the same item list and stock modes. To apply changed shop settings, restart rsg-stores, then the registering resources. External resources should also re-register when rsg-stores starts.
 
 Changes sync to clients and refresh an open custom shop, clearing its baskets while retaining its selected tab, valid category, and owned-items preference. Checkout checks the shop revision to reject outdated baskets.
 
@@ -267,21 +313,13 @@ end)
 
 The stock event reasons are `buy`, `sell`, `restock`, and `update`. Price-only updates do not emit it. Filter by your shop IDs and avoid sending another stock update in response to every `update` notification.
 
-Disable the external resource's duplicate interactions, checkout, and restock timers for integrated shops. rsg-stores manages the storefront and transactions; nt_trader can retain demand calculations and persistence and send revised prices/stock through exports. Its separate market guide and demand-tier display are not added to the NUI by this integration.
+Disable duplicate shop interactions, checkout, and restock timers in integrated resources. They can retain demand calculations and persistence, then send changes through exports.
 
-See [exports.md](exports.md) for full signatures, validation rules, registration examples, and integration steps. [trader.lua](trader.lua) is an external configuration draft and is not loaded by rsg-stores.
-
-#### Runtime item availability (nt_pelt_trader)
-
-A resource such as `nt_pelt_trader` can register a shop with a single `Pelts` item group containing every item it might offer. Reference that group in the shop's `buy` and/or `sell` lists with an adjustment of `0`. Each item must have at least one valid price during registration.
-
-After successful registration, call `UpdateCustomShopItems` from `nt_pelt_trader` to set `buyPrice = false` and/or `sellPrice = false` for items that should be hidden. Disable both prices to hide an item completely. Whenever its available selection changes during runtime, send another update: a numeric price of at least `0.01` shows an item on that tab again, and `false` hides it. Open shops refresh automatically.
-
-Register the full possible item list up front; runtime updates change which registered items are available, rather than adding new item names or replacing the group. Editing the original group table alone does not update the live shop. Retry a rejected busy update on the resource's next update cycle.
+For rotating selections, register the full possible item list once, then update directional prices to show or hide items. For example, a pelt trader can register all pelts in one group and enable only its current selection.
 
 ### Locales
 
-All player-facing text (notification titles/descriptions, NUI labels, toasts, and Discord embed text) lives in `locales/en.json`, loaded via `ox_lib`'s locale system. To translate the resource, duplicate `en.json` as e.g. `locales/de.json`, translate the values (keep the `%s`/`%d` placeholders in place and in order), and set your server's ox_lib locale convar accordingly. No Lua or JS code needs to change.
+Storefront text, transaction notifications, and Discord embed text use `locales/en.json`. Duplicate it as, for example, `locales/de.json`, translate the values while retaining `%s`/`%d` placeholders in order, and select that language through ox_lib's locale convar. The temporary door-unlock notification is currently hard-coded in `client/hours.lua`.
 
 ---
 
@@ -289,6 +327,7 @@ All player-facing text (notification titles/descriptions, NUI labels, toasts, an
 
 ```text
 rsg-stores/
+  client/hours.lua        -- schedules, doors, temporary exit unlocking
   client/client.lua       -- NUI, target zones, optional NPCs and blips
   server/server.lua       -- transactions, custom shops, stock and pricing
   server/webhook.lua      -- Discord webhook queue/sender
@@ -300,9 +339,6 @@ rsg-stores/
   ui/script.js
   ui/style.css
   fxmanifest.lua
-  exports.md              -- custom shop API reference
-  custom.md               -- custom shop planning
-  trader.lua              -- external trader config draft; not loaded
 ```
 
 ---
@@ -310,7 +346,6 @@ rsg-stores/
 ## Troubleshooting
 
 - **An item does not show up**: confirm its name exists in `RSGCore.Shared.Items`, its group is listed on the correct shop tab, and it has that direction's price. Also check the owned-items filter on Sell.
-- **A shop is not interactable**: verify its zone coordinates and that ox_target started before rsg-stores. NPC settings do not control the target zone. For a custom shop, check the registration export's success/reason in the external resource.
-- **No interaction at all** — make sure `ox_target` is started before `rsg-stores`; the console will log `ox_target is not running` if it starts too late.
+- **A shop is not interactable**: check opening hours, zone coordinates, and that ox_target started first. NPC settings do not control interaction. For custom shops, inspect the registration export's success/reason.
 - **Nothing posts to Discord** — confirm `Config.Webhooks.url` is set and check the console for `Discord webhook post failed with status ...`, which indicates Discord rejected the request (bad/expired webhook URL is the usual cause).
 - **Custom stock or prices do not change**: use the update export rather than editing an already-registered config table. Re-registration applies incoming prices and stock. Restart rsg-stores and then the registering resource after loading code changes.

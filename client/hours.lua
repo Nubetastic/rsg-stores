@@ -12,6 +12,11 @@ function IsStoreOpen(shop)
     return hour >= hours.open and hour < hours.close
 end
 
+StoreHoursShops = {}
+for _, shop in pairs(Config.Shops) do
+    StoreHoursShops[shop.id] = shop
+end
+
 local exitUnlockUntil = {}
 local nearClosedStore = {}
 
@@ -19,7 +24,7 @@ CreateThread(function()
     while true do
         local playerCoords = GetEntityCoords(PlayerPedId())
         local now = GetGameTimer()
-        for _, shop in pairs(Config.Shops) do
+        for _, shop in pairs(StoreHoursShops) do
             local open = IsStoreOpen(shop)
             if shop.Doors and #shop.Doors > 0 then
                 local nearby = #(playerCoords - vector3(shop.coords.x, shop.coords.y, shop.coords.z)) <= Config.MaxInteractDistance

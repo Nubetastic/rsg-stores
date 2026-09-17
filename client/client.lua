@@ -37,7 +37,7 @@ local UiLocale = {
     close = locale('ui.close'),
 }
 
-local shopsById = {}
+local shopsById = StoreHoursShops
 local currentShop = nil
 local spawnedPeds = {}
 local npcOpen = {}
@@ -49,6 +49,7 @@ local interactionsReady = false
 local registeredInteractions = {}
 
 for _, shop in pairs(Config.Shops) do
+    shop.revision = 1
     shopsById[shop.id] = shop
 end
 
@@ -57,7 +58,7 @@ local function buildCategoryPayload(groups, direction, shop, priceOverrides)
     local priceField = direction .. 'Price'
 
     for _, group in ipairs(groups) do
-        local category = shop.custom and shop.itemGroups[group[1]] or Config.ItemGroups[group[1]]
+        local category = shop.itemGroups[group[1]]
         local regionalAdjustment = group[2]
         local items = {}
 
@@ -123,11 +124,9 @@ local function OpenShop(shopId)
 
     RSGCore.Functions.TriggerCallback('rsg-stores:server:getShopState', function(state)
         if currentShop ~= shop or request ~= shopRequest then return end
-        if shop.custom then
-            if not state or not state.revision or state.revision < shop.revision then return end
-            shop.itemGroups = state.itemGroups
-            shop.revision = state.revision
-        end
+        if not state or not state.revision or state.revision < shop.revision then return end
+        shop.itemGroups = state.itemGroups
+        shop.revision = state.revision
 
         SetNuiFocus(true, true)
         shopOpen = true
@@ -169,7 +168,7 @@ end
 
 RegisterNetEvent('rsg-stores:client:updateCustomShop', function(shopId, itemGroups, revision)
     local shop = shopsById[shopId]
-    if not shop or not shop.custom or revision <= shop.revision then return end
+    if not shop or revision <= shop.revision then return end
     shop.itemGroups = itemGroups
     shop.revision = revision
     refreshCustomShop(shopId)

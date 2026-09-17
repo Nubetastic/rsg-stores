@@ -93,15 +93,45 @@ end
 local function publishCustomShop(shop, changedItems, reason)
     shop.revision = shop.revision + 1
     TriggerClientEvent('rsg-stores:client:updateCustomShop', -1, shop.id, shop.itemGroups, shop.revision)
-    if next(changedItems) then
+    if shop.custom and next(changedItems) then
         TriggerEvent('rsg-stores:server:CustomShopStockChanged', shop.id, copyShopData(changedItems), reason)
     end
+end
+
+for _, shop in pairs(Config.Shops) do
+    shop.revision = 1
+    shop.processing = false
+    shop.itemGroups = {}
+    shop.items = {}
+    assert(shop.restockTime == nil or (isFiniteNumber(shop.restockTime) and shop.restockTime >= 0), 'Invalid restockTime for shop ' .. shop.id)
+    for _, direction in ipairs({'buy', 'sell'}) do
+        for _, reference in ipairs(shop[direction] or {}) do
+            local groupName = reference[1]
+            if not shop.itemGroups[groupName] then
+                shop.itemGroups[groupName] = copyShopData(Config.ItemGroups[groupName])
+                for _, item in ipairs(shop.itemGroups[groupName].items) do
+                    assert(not shop.items[item.name], 'Duplicate item in shop ' .. shop.id .. ': ' .. item.name)
+                    if item.amount ~= nil then
+                        assert(isFiniteNumber(item.amount) and item.amount >= 0 and item.amount % 1 == 0
+                            and isFiniteNumber(item.maxStock) and item.maxStock >= 0 and item.maxStock % 1 == 0,
+                            'Finite items require nonnegative whole amount and maxStock: ' .. shop.id .. '/' .. item.name)
+                        item.targetStock = item.amount
+                    end
+                    assert(item.restock == nil or (isFiniteNumber(item.restock) and item.restock >= 0 and item.restock % 1 == 0),
+                        'Invalid restock quantity: ' .. shop.id .. '/' .. item.name)
+                    shop.items[item.name] = item
+                end
+            end
+        end
+    end
+    if shop.restockTime and shop.restockTime > 0 then shop.nextRestock = os.time() + shop.restockTime * 60 end
 end
 
 local function customShopPayload(shop)
     return {
         id = shop.id, label = shop.label, coords = shop.coords,
         npc = shop.npc, npcmodel = shop.npcmodel, blip = shop.blip,
+        Hours = shop.Hours, Doors = shop.Doors,
         buy = shop.buy, sell = shop.sell, custom = true,
         itemGroups = shop.itemGroups, revision = shop.revision,
     }
@@ -136,6 +166,50 @@ exports('RegisterCustomShop', function(data, itemGroups)
             return false, 'Visible blips require sprite, positive scale, and label.'
         end
     end
+    if data.dynamicPricing ~= nil then
+        if type(data.dynamicPricing) ~= 'table' then return false, 'dynamicPricing must be a table.' end
+        if data.dynamicPricing.enabled ~= nil and type(data.dynamicPricing.enabled) ~= 'boolean' then
+            return false, 'dynamicPricing.enabled must be a boolean.'
+        end
+        for _, field in ipairs({'increasePerUnit', 'decreasePerUnit', 'minMultiplier', 'maxMultiplier'}) do
+            local value = data.dynamicPricing[field]
+            if value ~= nil and (not isFiniteNumber(value) or value < 0) then
+                return false, 'Dynamic pricing rates and multipliers must be nonnegative finite numbers.'
+            end
+        end
+        local minMultiplier = data.dynamicPricing.minMultiplier or Config.DynamicPricing.minMultiplier
+        local maxMultiplier = data.dynamicPricing.maxMultiplier or Config.DynamicPricing.maxMultiplier
+        if minMultiplier <= 0 or maxMultiplier < minMultiplier then
+            return false, 'Dynamic pricing multipliers require a positive minimum and maximum at least equal to it.'
+        end
+    end
+    if data.Hours ~= nil then
+        if type(data.Hours) ~= 'table' then return false, 'Hours must be a table.' end
+        if data.Hours.alwaysOpen ~= nil and type(data.Hours.alwaysOpen) ~= 'boolean' then
+            return false, 'Hours.alwaysOpen must be a boolean.'
+        end
+        if not data.Hours.alwaysOpen then
+            for _, field in ipairs({'open', 'close'}) do
+                local hour = data.Hours[field]
+                if not isFiniteNumber(hour) or hour % 1 ~= 0 or hour < 0 or hour > 23 then
+                    return false, 'Hours.open and Hours.close must be whole hours from 0 to 23.'
+                end
+            end
+        end
+    end
+    if data.Doors ~= nil then
+        if type(data.Doors) ~= 'table' then return false, 'Doors must be a list of door IDs.' end
+        local count = 0
+        for key, doorId in pairs(data.Doors) do
+            if not isFiniteNumber(key) or key % 1 ~= 0 or key < 1 or not isFiniteNumber(doorId) or doorId % 1 ~= 0 then
+                return false, 'Doors must be a list of whole-number door IDs.'
+            end
+            count = count + 1
+        end
+        for index = 1, count do
+            if data.Doors[index] == nil then return false, 'Doors must be a sequential list of door IDs.' end
+        end
+    end
     if data.restockTime ~= nil and (not isFiniteNumber(data.restockTime) or data.restockTime < 0) then
         return false, 'restockTime must be zero or positive minutes.'
     end
@@ -148,14 +222,13 @@ exports('RegisterCustomShop', function(data, itemGroups)
     shop.itemGroups = {}
     shop.items = {}
     shop.npc = data.npc == true
-    shop.dynamicPricing = { enabled = false }
     local categoryIds = { buy = {}, sell = {} }
     local directionalItems = { buy = {}, sell = {} }
     for _, direction in ipairs({'buy', 'sell'}) do
         if type(shop[direction]) ~= 'table' then return false, 'buy and sell must be lists (empty lists are allowed).' end
         for _, reference in ipairs(shop[direction]) do
-            if type(reference) ~= 'table' or type(reference[1]) ~= 'string' or reference[2] ~= 0 then
-                return false, 'Custom group entries must be {groupName, 0}; supplied prices are final.'
+            if type(reference) ~= 'table' or type(reference[1]) ~= 'string' or not isFiniteNumber(reference[2]) then
+                return false, 'Custom group entries must be {groupName, adjustment} with a finite numeric adjustment.'
             end
             local groupName = reference[1]
             local group = itemGroups[groupName]
@@ -179,6 +252,7 @@ exports('RegisterCustomShop', function(data, itemGroups)
                         if not isFiniteNumber(item.amount) or item.amount < 0 or item.amount % 1 ~= 0 or not isFiniteNumber(item.maxStock) or item.maxStock < 0 or item.maxStock % 1 ~= 0 then
                             return false, 'Finite items require nonnegative whole amount and maxStock.'
                         end
+                        item.targetStock = item.amount
                     end
                     if item.restock ~= nil and (not isFiniteNumber(item.restock) or item.restock < 0 or item.restock % 1 ~= 0) then return false, 'restock must be a nonnegative whole quantity.' end
                     shop.items[item.name] = item
@@ -278,13 +352,26 @@ CreateThread(function()
     while true do
         Wait(1000)
         for _, shop in pairs(shopsById) do
-            if shop.custom and shop.nextRestock and os.time() >= shop.nextRestock and not shop.processing then
+            if shop.nextRestock and os.time() >= shop.nextRestock and not shop.processing then
                 local changedItems = {}
                 for name, item in pairs(shop.items) do
                     if item.amount ~= nil and item.restock and item.restock > 0 then
                         local amount
                         if item.amount > item.maxStock then
-                            amount = math.max(0, item.maxStock - (item.restock * 3))
+                            local overstockRatio = (item.amount - item.maxStock) / item.restock
+                            for _, tier in ipairs(Config.OverstockReduction) do
+                                if overstockRatio <= tier.maxRatio then
+                                    local reduction = math.floor(item.restock * tier.multiplier + 0.5)
+                                    amount = math.max(item.maxStock, item.amount - reduction)
+                                    break
+                                end
+                            end
+                        elseif Config.TargetStock and item.amount >= item.targetStock then
+                            if math.random(2) == 1 then
+                                amount = math.min(item.maxStock, item.amount + item.restock)
+                            else
+                                amount = math.max(0, item.amount - item.restock)
+                            end
                         else
                             amount = math.min(item.maxStock, item.amount + item.restock)
                         end
@@ -308,7 +395,7 @@ local function buildPriceLookup(shop)
     for _, group in ipairs(shop.buy) do
         local groupName = group[1]
         local regionalAdjustment = group[2]
-        for _, entry in ipairs((shop.custom and shop.itemGroups[groupName] or Config.ItemGroups[groupName]).items) do
+        for _, entry in ipairs(shop.itemGroups[groupName].items) do
             if entry.buyPrice ~= nil then
                 lookup[entry.name] = math.max(0.01, entry.buyPrice + regionalAdjustment)
             end
@@ -324,7 +411,7 @@ local function buildSellPriceLookup(shop)
     for _, group in ipairs(shop.sell) do
         local groupName = group[1]
         local regionalAdjustment = group[2]
-        for _, entry in ipairs((shop.custom and shop.itemGroups[groupName] or Config.ItemGroups[groupName]).items) do
+        for _, entry in ipairs(shop.itemGroups[groupName].items) do
             if entry.sellPrice ~= nil then
                 lookup[entry.name] = math.max(0.01, entry.sellPrice + regionalAdjustment)
             end
@@ -333,8 +420,7 @@ local function buildSellPriceLookup(shop)
     return lookup
 end
 
-local function validateCustomStock(shop, lines, direction, revision)
-    if not shop.custom then return true end
+local function validateShopStock(shop, lines, direction, revision)
     if revision ~= shop.revision then return false, locale('error.shop_changed') end
     for _, line in ipairs(lines) do
         local item = shop.items[line.name]
@@ -488,13 +574,13 @@ RegisterNetEvent('rsg-stores:server:checkout', function(shopId, basket, revision
 
     -- Wrapped so a stray error (bad config, framework hiccup, etc) can never
     -- leave this player permanently locked out of buying/selling.
-    if shop.custom and shop.processing then
+    if shop.processing then
         notifyError(src, locale('title.purchase_failed'), locale('error.shop_busy'))
         TriggerClientEvent('rsg-stores:client:checkoutResult', src, false)
         unlockPlayer(src)
         return
     end
-    if shop.custom then shop.processing = true end
+    shop.processing = true
     local changedItems = {}
 
     local ok, err = pcall(function()
@@ -507,7 +593,7 @@ RegisterNetEvent('rsg-stores:server:checkout', function(shopId, basket, revision
             return
         end
 
-        local stockValid, stockError = validateCustomStock(shop, lines, 'buy', revision)
+        local stockValid, stockError = validateShopStock(shop, lines, 'buy', revision)
         if not stockValid then
             notifyError(src, locale('title.purchase_failed'), stockError)
             TriggerClientEvent('rsg-stores:client:checkoutResult', src, false)
@@ -547,7 +633,7 @@ RegisterNetEvent('rsg-stores:server:checkout', function(shopId, basket, revision
         for _, purchase in ipairs(purchases) do
             if Player.Functions.AddItem(purchase.name, purchase.amount) then
                 added[#added + 1] = purchase
-                if shop.custom and shop.items[purchase.name].amount ~= nil then
+                if shop.items[purchase.name].amount ~= nil then
                     shop.items[purchase.name].amount = shop.items[purchase.name].amount - purchase.amount
                     changedItems[purchase.name] = { amount = shop.items[purchase.name].amount }
                 end
@@ -608,7 +694,7 @@ RegisterNetEvent('rsg-stores:server:checkout', function(shopId, basket, revision
         TriggerClientEvent('rsg-stores:client:checkoutResult', src, false)
     end
 
-    if shop.custom then shop.processing = false end
+    shop.processing = false
     unlockPlayer(src)
     if next(changedItems) then publishCustomShop(shop, changedItems, 'buy') end
 end)
@@ -636,16 +722,14 @@ RSGCore.Functions.CreateCallback('rsg-stores:server:getShopState', function(sour
         end
     end
     local stock = {}
-    if shop.custom then
-        for name, item in pairs(shop.items) do
-            if item.amount ~= nil then
-                stock[name] = item.amount
-            end
+    for name, item in pairs(shop.items) do
+        if item.amount ~= nil then
+            stock[name] = item.amount
         end
     end
     cb({ buyPrices = buyPrices, sellPrices = sellPrices, owned = owned,
         stock = stock, revision = shop.revision,
-        itemGroups = shop.custom and shop.itemGroups or nil })
+        itemGroups = shop.itemGroups })
 end)
 
 RegisterNetEvent('rsg-stores:server:sellCheckout', function(shopId, basket, revision)
@@ -672,13 +756,13 @@ RegisterNetEvent('rsg-stores:server:sellCheckout', function(shopId, basket, revi
         return
     end
 
-    if shop.custom and shop.processing then
+    if shop.processing then
         notifyError(src, locale('title.sale_failed'), locale('error.shop_busy'))
         TriggerClientEvent('rsg-stores:client:sellResult', src, false)
         unlockPlayer(src)
         return
     end
-    if shop.custom then shop.processing = true end
+    shop.processing = true
     local changedItems = {}
 
     local ok, err = pcall(function()
@@ -691,7 +775,7 @@ RegisterNetEvent('rsg-stores:server:sellCheckout', function(shopId, basket, revi
             return
         end
 
-        local stockValid, stockError = validateCustomStock(shop, lines, 'sell', revision)
+        local stockValid, stockError = validateShopStock(shop, lines, 'sell', revision)
         if not stockValid then
             notifyError(src, locale('title.sale_failed'), stockError)
             TriggerClientEvent('rsg-stores:client:sellResult', src, false)
@@ -746,12 +830,10 @@ RegisterNetEvent('rsg-stores:server:sellCheckout', function(shopId, basket, revi
         for itemName, newMultiplier in pairs(pendingMultipliers) do
             setMultiplier(shop.id, itemName, newMultiplier)
         end
-        if shop.custom then
-            for _, line in ipairs(lines) do
-                if shop.items[line.name].amount ~= nil then
-                    shop.items[line.name].amount = shop.items[line.name].amount + line.amount
-                    changedItems[line.name] = { amount = shop.items[line.name].amount }
-                end
+        for _, line in ipairs(lines) do
+            if shop.items[line.name].amount ~= nil then
+                shop.items[line.name].amount = shop.items[line.name].amount + line.amount
+                changedItems[line.name] = { amount = shop.items[line.name].amount }
             end
         end
 
@@ -781,7 +863,7 @@ RegisterNetEvent('rsg-stores:server:sellCheckout', function(shopId, basket, revi
         TriggerClientEvent('rsg-stores:client:sellResult', src, false)
     end
 
-    if shop.custom then shop.processing = false end
+    shop.processing = false
     unlockPlayer(src)
     if next(changedItems) then publishCustomShop(shop, changedItems, 'sell') end
 end)
