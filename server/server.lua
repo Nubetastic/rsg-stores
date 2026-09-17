@@ -81,13 +81,17 @@ local function isFiniteNumber(n)
     return type(n) == 'number' and n == n and n ~= math.huge and n ~= -math.huge
 end
 
--- Flattens a shop's categories into name -> price, so the client's
+-- Flattens a shop's buy groups into name -> price, so the client's
 -- reported prices are never trusted.
 local function buildPriceLookup(shop)
     local lookup = {}
-    for _, category in ipairs(shop.categories) do
-        for _, entry in ipairs(category.items) do
-            lookup[entry.name] = entry.price
+    for _, group in ipairs(shop.buy) do
+        local groupName = group[1]
+        local regionalAdjustment = group[2]
+        for _, entry in ipairs(Config.ItemGroups[groupName].items) do
+            if entry.buyPrice ~= nil then
+                lookup[entry.name] = math.max(0.01, entry.buyPrice + regionalAdjustment)
+            end
         end
     end
     return lookup
@@ -97,9 +101,13 @@ end
 local function buildSellPriceLookup(shop)
     local lookup = {}
     if not shop.sell then return lookup end
-    for _, category in ipairs(shop.sell.categories) do
-        for _, entry in ipairs(category.items) do
-            lookup[entry.name] = entry.price
+    for _, group in ipairs(shop.sell) do
+        local groupName = group[1]
+        local regionalAdjustment = group[2]
+        for _, entry in ipairs(Config.ItemGroups[groupName].items) do
+            if entry.sellPrice ~= nil then
+                lookup[entry.name] = math.max(0.01, entry.sellPrice + regionalAdjustment)
+            end
         end
     end
     return lookup
@@ -361,23 +369,18 @@ RSGCore.Functions.CreateCallback('rsg-stores:server:getShopState', function(sour
     end
 
     local buyPrices = {}
-    for _, category in ipairs(shop.categories) do
-        for _, entry in ipairs(category.items) do
-            buyPrices[entry.name] = getLivePrice(shop, entry.name, entry.price)
-        end
+    for itemName, basePrice in pairs(buildPriceLookup(shop)) do
+        buyPrices[itemName] = getLivePrice(shop, itemName, basePrice)
     end
 
     local sellPrices = {}
     local owned = {}
     if shop.sell then
-        for _, category in ipairs(shop.sell.categories) do
-            for _, entry in ipairs(category.items) do
-                sellPrices[entry.name] = getLivePrice(shop, entry.name, entry.price)
-                owned[entry.name] = getOwnedAmount(Player, entry.name)
-            end
+        for itemName, basePrice in pairs(buildSellPriceLookup(shop)) do
+            sellPrices[itemName] = getLivePrice(shop, itemName, basePrice)
+            owned[itemName] = getOwnedAmount(Player, itemName)
         end
     end
-
     cb({ buyPrices = buyPrices, sellPrices = sellPrices, owned = owned })
 end)
 
