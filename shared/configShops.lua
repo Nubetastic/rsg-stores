@@ -1,4 +1,27 @@
 Config.ItemGroups = {
+    ["Horse Tools"] = {
+        id = 'horse_tools',
+        label = 'Horse Tools',
+        icon = 'fa-solid fa-toolbox',
+        items = {
+            { name = 'horse_brush', buyPrice = 5.00 },
+            { name = 'horse_lantern', buyPrice = 25.00 },
+            { name = 'horse_stimulant', buyPrice = 2.50 },
+            { name = 'horse_reviver', buyPrice = 10.00 },
+        },
+    },
+    ["Horse Food"] = {
+        id = 'horse_food',
+        label = 'Horse Food',
+        icon = 'fa-solid fa-carrot',
+        items = {
+            { name = 'horse_carrot', buyPrice = 0.25 },
+            { name = 'horse_apple', buyPrice = 0.25 },
+            { name = 'sugarcube', buyPrice = 0.25 },
+            { name = 'haysnack', buyPrice = 0.50 },
+            { name = 'horsemeal', buyPrice = 1.00 },
+        },
+    },
     ["Food"] = {
         id = 'food',
         label = 'Food & Drink',
@@ -368,6 +391,160 @@ Config.ItemGroups = {
     },
 }
 Config.Shops = {
+    ---------------------------------
+    -- Valentine Stable Store
+    ---------------------------------
+    {
+        id = 'stable-valentine',
+        Doors = {},
+        Hours = {
+            alwaysOpen = true,
+        },
+        label = 'Valentine Stable Store',
+        coords = vector4(-364.0396, 790.7434, 116.2135, 0.0),
+        npc = false,
+        blip = {
+            show = false,
+        },
+        money = 'cash',
+        dynamicPricing = {
+            enabled = false,
+        },
+        buy = {{'Horse Tools', 0.0}, {'Horse Food', 0.0}},
+        sell = {},
+    },
+    ---------------------------------
+    -- Van Horn Stable Store
+    ---------------------------------
+    {
+        id = 'stable-vanhorn',
+        Doors = {},
+        Hours = {
+            alwaysOpen = true,
+        },
+        label = 'Van Horn Stable Store',
+        coords = vector4(2967.7144, 791.9626, 52.5143, 0.0),
+        npc = false,
+        blip = {
+            show = false,
+        },
+        money = 'cash',
+        dynamicPricing = {
+            enabled = false,
+        },
+        buy = {{'Horse Tools', 0.0}, {'Horse Food', 0.0}},
+        sell = {},
+    },
+    ---------------------------------
+    -- Saint Denis Stable Store
+    ---------------------------------
+    {
+        id = 'stable-stdenis',
+        Doors = {},
+        Hours = {
+            alwaysOpen = true,
+        },
+        label = 'Saint Denis Stable Store',
+        coords = vector4(2512.3518, -1456.9178, 46.3420, 0.0),
+        npc = false,
+        blip = {
+            show = false,
+        },
+        money = 'cash',
+        dynamicPricing = {
+            enabled = false,
+        },
+        buy = {{'Horse Tools', 0.0}, {'Horse Food', 0.0}},
+        sell = {},
+    },
+    ---------------------------------
+    -- Rhodes Stable Store
+    ---------------------------------
+    {
+        id = 'stable-rhodes',
+        Doors = {},
+        Hours = {
+            alwaysOpen = true,
+        },
+        label = 'Rhodes Stable Store',
+        coords = vector4(1215.0846, -189.6010, 100.8072, 0.0),
+        npc = false,
+        blip = {
+            show = false,
+        },
+        money = 'cash',
+        dynamicPricing = {
+            enabled = false,
+        },
+        buy = {{'Horse Tools', 0.0}, {'Horse Food', 0.0}},
+        sell = {},
+    },
+    ---------------------------------
+    -- Strawberry Stable Store
+    ---------------------------------
+    {
+        id = 'stable-strawberry',
+        Doors = {},
+        Hours = {
+            alwaysOpen = true,
+        },
+        label = 'Strawberry Stable Store',
+        coords = vector4(-1819.8859, -568.4932, 155.5276, 0.0),
+        npc = false,
+        blip = {
+            show = false,
+        },
+        money = 'cash',
+        dynamicPricing = {
+            enabled = false,
+        },
+        buy = {{'Horse Tools', 0.0}, {'Horse Food', 0.0}},
+        sell = {},
+    },
+    ---------------------------------
+    -- Blackwater Stable Store
+    ---------------------------------
+    {
+        id = 'stable-blackwater',
+        Doors = {},
+        Hours = {
+            alwaysOpen = true,
+        },
+        label = 'Blackwater Stable Store',
+        coords = vector4(-877.9753, -1361.9745, 43.0297, 0.0),
+        npc = false,
+        blip = {
+            show = false,
+        },
+        money = 'cash',
+        dynamicPricing = {
+            enabled = false,
+        },
+        buy = {{'Horse Tools', 0.0}, {'Horse Food', 0.0}},
+        sell = {},
+    },
+    ---------------------------------
+    -- Tumbleweed Stable Store
+    ---------------------------------
+    {
+        id = 'stable-tumbleweed',
+        Doors = {},
+        Hours = {
+            alwaysOpen = true,
+        },
+        label = 'Tumbleweed Stable Store',
+        coords = vector4(-5515.3052, -3039.4504, -2.3577, 0.0),
+        npc = false,
+        blip = {
+            show = false,
+        },
+        money = 'cash',
+        dynamicPricing = {
+            enabled = false,
+        },
+        buy = {{'Horse Tools', 0.0}, {'Horse Food', 0.0}},
+        sell = {},
+    },
     ---------------------------------
     -- Rhodes General Store
     ---------------------------------

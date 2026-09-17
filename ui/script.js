@@ -173,11 +173,15 @@
             const buttonLabel = mode === 'sell' ? (L.sellButton || '') : (L.addToBasket || '');
 
             card.innerHTML = `
-                <div class="item-icon-wrap"><img src="${escapeHtml(item.image)}" onerror="this.style.visibility='hidden'"></div>
-                <div class="item-label">${escapeHtml(item.label)}</div>
-                <div class="item-price">$${fmtMoney(item.price)}</div>
-                ${ownedLine}
-                ${stockLine}
+                <div class="item-details">
+                    <div class="item-icon-wrap"><img src="${escapeHtml(item.image)}" onerror="this.style.visibility='hidden'"></div>
+                    <div class="item-info">
+                        <div class="item-label">${escapeHtml(item.label)}</div>
+                        <div class="item-price">$${fmtMoney(item.price)}</div>
+                        ${ownedLine}
+                        ${stockLine}
+                    </div>
+                </div>
                 <button class="add-btn" ${disabled}>${escapeHtml(buttonLabel)}</button>
             `;
             const addBtn = card.querySelector('.add-btn');
