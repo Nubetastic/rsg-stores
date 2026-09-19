@@ -131,7 +131,7 @@ local function customShopPayload(shop)
     return {
         id = shop.id, label = shop.label, coords = shop.coords,
         npc = shop.npc, npcmodel = shop.npcmodel, blip = shop.blip,
-        Hours = shop.Hours, Doors = shop.Doors,
+        Hours = shop.Hours, Doors = shop.Doors, jobs = shop.jobs,
         buy = shop.buy, sell = shop.sell, custom = true,
         itemGroups = shop.itemGroups, revision = shop.revision,
     }
@@ -566,6 +566,12 @@ RegisterNetEvent('rsg-stores:server:checkout', function(shopId, basket, revision
         return
     end
 
+    if not PlayerHasShopJob(shop, Player.PlayerData.job) then
+        notifyError(src, locale('title.store_unavailable'), locale('error.job_locked'))
+        TriggerClientEvent('rsg-stores:client:checkoutResult', src, false)
+        return
+    end
+
     if not tryLockPlayer(src) then
         notifyError(src, locale('title.purchase_failed'), locale('error.purchase_processing'))
         TriggerClientEvent('rsg-stores:client:checkoutResult', src, false)
@@ -703,7 +709,8 @@ RSGCore.Functions.CreateCallback('rsg-stores:server:getShopState', function(sour
     local Player = RSGCore.Functions.GetPlayer(source)
     local shop = shopsById[shopId]
 
-    if not Player or not shop or not isPlayerNearShop(source, shop) then
+    if not Player or not shop or not isPlayerNearShop(source, shop)
+        or not PlayerHasShopJob(shop, Player.PlayerData.job) then
         cb({ buyPrices = {}, sellPrices = {}, owned = {} })
         return
     end
@@ -746,6 +753,12 @@ RegisterNetEvent('rsg-stores:server:sellCheckout', function(shopId, basket, revi
 
     if not isPlayerNearShop(src, shop) then
         notifyError(src, locale('title.too_far'), locale('error.too_far'))
+        TriggerClientEvent('rsg-stores:client:sellResult', src, false)
+        return
+    end
+
+    if not PlayerHasShopJob(shop, Player.PlayerData.job) then
+        notifyError(src, locale('title.store_unavailable'), locale('error.job_locked'))
         TriggerClientEvent('rsg-stores:client:sellResult', src, false)
         return
     end
