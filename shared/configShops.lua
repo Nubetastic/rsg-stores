@@ -131,15 +131,6 @@ Config.ItemGroups = {
             -- add items here
         },
     },
-    ["Medic Job"] = {
-        id = 'medicjob',
-        label = 'Medic Job',
-        icon = 'fa-solid fa-briefcase-medical',
-        items = {
-            { name = 'bandage', buyPrice = 0.0 },
-            { name = 'firstaid', buyPrice = 0.0 },
-        },
-    },
     ["Law Job"] = {
         id = 'lawjob',
         label = 'Law Job',
@@ -175,29 +166,6 @@ Config.Shops = {
         },
         buy = {{'Food', 0.0}, {'Medicine', 0.0}, {'Tools', 0.0}},
         sell = {{'Herbs', 0.0}, {'Food', 0.0}},
-    },
-    ---------------------------------
-    -- Valentine Medic Job
-    ---------------------------------
-    {
-        id = 'val_medic_store',
-        Doors = {},
-        label = 'Valentine Medic Store',
-        coords = vector4(-288.47, 813.01, 119.39, 139.17),
-        npcmodel = 'u_m_m_valdoctor_01',
-		jobs = { 'medic' },
-        blip = {
-            show = true,
-            sprite = 'blip_shop_store',
-            scale = 0.2,
-            label = 'Valentine Medic Store',
-        },
-        money = 'cash',
-        dynamicPricing = {
-            enabled = false,
-        },
-        buy = {{'Medic Job', 0.0}},
-        sell = {{'Medic Job', 0.0}},
     },
     ---------------------------------
     -- Valentine Law Store
