@@ -9,6 +9,7 @@
         "store_unavailable_buy": "This store is not available.",
         "store_unavailable_sell": "This store does not buy items.",
         "too_far": "You need to be closer to the store to do that.",
+        "job_locked": "You are not authorised to use this store.",
         "purchase_processing": "Please wait, your last purchase is still processing.",
         "sale_processing": "Please wait, your last sale is still processing.",
         "basket_invalid": "Your basket is empty or invalid.",

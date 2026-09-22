@@ -47,6 +47,7 @@ local shopRequest = 0
 local shopOpen = false
 local interactionsReady = false
 local registeredInteractions = {}
+local updateShopBlip
 
 for _, shop in pairs(Config.Shops) do
     shop.revision = 1
@@ -116,6 +117,11 @@ end
 local function OpenShop(shopId)
     local shop = shopsById[shopId]
     if not shop then return false end
+
+    if not PlayerHasShopJob(shop, RSGCore.Functions.GetPlayerData().job) then
+        lib.notify({ title = shop.label, description = locale('error.job_locked'), type = 'error' })
+        return false
+    end
 
     currentShop = shop
     shopOpen = false
@@ -225,23 +231,53 @@ local function updateShopNpc(shop)
     spawnedPeds[shop.id] = ped
 end
 
+-- Creates/removes the shop blip depending on whether the player's job is
+-- allowed, and keeps its open/closed colour in sync.
+updateShopBlip = function(shop)
+    if not shop.blip or not shop.blip.show then return end
+
+    local allowed = PlayerHasShopJob(shop, RSGCore.Functions.GetPlayerData().job)
+
+    if not allowed then
+        if shop.blip.handle then
+            RemoveBlip(shop.blip.handle)
+            shopBlips[shop.id] = nil
+            shop.blip.handle = nil
+            shop.blip.open = nil
+        end
+        return
+    end
+
+    local open = IsStoreOpen(shop)
+
+    if not shop.blip.handle then
+        local blip = BlipAddForCoords(1664425300, shop.coords.x, shop.coords.y, shop.coords.z)
+        SetBlipSprite(blip, joaat(shop.blip.sprite))
+        SetBlipScale(blip, shop.blip.scale)
+        SetBlipName(blip, shop.blip.label)
+        shop.blip.handle = blip
+        shopBlips[shop.id] = blip
+        if not open then
+            BlipAddModifier(blip, joaat('BLIP_MODIFIER_MP_COLOR_2'))
+        end
+        shop.blip.open = open
+    elseif shop.blip.open ~= open then
+        if open then
+            BlipRemoveModifier(shop.blip.handle, joaat('BLIP_MODIFIER_MP_COLOR_2'))
+        else
+            BlipAddModifier(shop.blip.handle, joaat('BLIP_MODIFIER_MP_COLOR_2'))
+        end
+        shop.blip.open = open
+    end
+end
+
 CreateThread(function()
     while true do
         Wait(1000)
         for _, shop in pairs(shopsById) do
             if registeredInteractions[shop.id] then
                 updateShopNpc(shop)
-            end
-            if shop.blip and shop.blip.handle then
-                local open = IsStoreOpen(shop)
-                if shop.blip.open ~= open then
-                    if open then
-                        BlipRemoveModifier(shop.blip.handle, joaat('BLIP_MODIFIER_MP_COLOR_2'))
-                    else
-                        BlipAddModifier(shop.blip.handle, joaat('BLIP_MODIFIER_MP_COLOR_2'))
-                    end
-                    shop.blip.open = open
-                end
+                updateShopBlip(shop)
             end
         end
         if currentShop then
@@ -314,7 +350,7 @@ local function registerShopInteraction(shop)
                 label = locale('ui.browse', shop.label),
                 distance = Config.MaxInteractDistance,
                 canInteract = function()
-                    return IsStoreOpen(shop)
+                    return IsStoreOpen(shop) and PlayerHasShopJob(shop, RSGCore.Functions.GetPlayerData().job)
                 end,
                 onSelect = function()
                     OpenShop(shop.id)
@@ -337,18 +373,7 @@ local function setupShop(shop)
         return
     end
 
-    if shop.blip and shop.blip.show then
-        local blip = BlipAddForCoords(1664425300, shop.coords.x, shop.coords.y, shop.coords.z)
-        SetBlipSprite(blip, joaat(shop.blip.sprite))
-        SetBlipScale(blip, shop.blip.scale)
-        SetBlipName(blip, shop.blip.label)
-        shop.blip.handle = blip
-        shop.blip.open = IsStoreOpen(shop)
-        if not shop.blip.open then
-            BlipAddModifier(blip, joaat('BLIP_MODIFIER_MP_COLOR_2'))
-        end
-        shopBlips[#shopBlips + 1] = blip
-    end
+    updateShopBlip(shop)
 end
 
 RegisterNetEvent('rsg-stores:client:registerCustomShop', function(shop)
@@ -404,7 +429,7 @@ AddEventHandler('onResourceStop', function(resource)
             exports.ox_target:removeZone(zone)
         end
     end
-    for _, blip in ipairs(shopBlips) do
+    for _, blip in pairs(shopBlips) do
         RemoveBlip(blip)
     end
 

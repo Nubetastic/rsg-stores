@@ -389,6 +389,17 @@ Config.ItemGroups = {
             { name = 'h_skin_ram_legendary', sellPrice = 30.00, buyPrice = 120.00 },
         },
     },
+    ["Law Job"] = {
+        id = 'lawjob',
+        label = 'Law Job',
+        icon = 'fa-solid fa-gun',
+        items = {
+            { name = 'weapon_revolver_cattleman', buyPrice = 0.0 },
+            { name = 'weapon_repeater_winchester', buyPrice = 0.0 },
+            { name = 'ammo_box_revolver', buyPrice = 0.0 },
+            { name = 'ammo_box_repeater', buyPrice = 0.0 },
+        },
+    },
 }
 Config.Shops = {
     ---------------------------------
@@ -523,6 +534,29 @@ Config.Shops = {
         money = 'cash',
         buy = {{'Horse Tools', 0.0}, {'Horse Food', 0.0}},
         sell = {},
+    },
+    ---------------------------------
+    -- Valentine Law Store
+    ---------------------------------
+    {
+        id = 'val_law_store',
+        Doors = {},
+        label = 'Valentine Law Store',
+        coords = vector4(-279.15, 805.93, 119.38, 286.26),
+        npcmodel = 'cs_valsheriff',
+		jobs = { 'vallaw' },
+        blip = {
+            show = true,
+            sprite = 'blip_shop_store',
+            scale = 0.2,
+            label = 'Valentine Law Store',
+        },
+        money = 'cash',
+        dynamicPricing = {
+            enabled = false,
+        },
+        buy = {{'Law Job', 0.0}},
+        sell = {{'Law Job', 0.0}},
     },
     ---------------------------------
     -- Rhodes General Store
