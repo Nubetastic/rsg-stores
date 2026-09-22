@@ -302,11 +302,11 @@ end)
 
 -- Shop zones are independent of the optional NPC.
 local function registerShopInteraction(shop)
-    local zone = exports.ox_target:addBoxZone({
+    local zone = exports.ox_target:addSphereZone({
         name = 'rsg_stores_' .. shop.id,
         coords = vector3(shop.coords.x, shop.coords.y, shop.coords.z),
-        size = vector3(3, 3, 1.0),
-        rotation = shop.coords.w,
+        radius = 1.5,
+        drawSprite = false,
         options = {
             {
                 name = 'rsg_stores_' .. shop.id,
