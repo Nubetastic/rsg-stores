@@ -464,7 +464,7 @@ var AdminUI = {
     },
 
     addItem: function(it) {
-        this.draftItems.push({ name: it.name, label: it.label, price: 0, amount: 10 });
+        this.draftItems.push({ name: it.name, label: it.label, price: 0, amount: null });
         this.closeModals();
         this.renderItems();
         var rows = this.$('adm-items').querySelectorAll('.it-price');

@@ -286,7 +286,7 @@
     "ui_adm_is_shop": "This NPC is a shopkeeper",
     "ui_adm_stock": "Stock",
     "ui_adm_no_items": "No items yet.",
-    "ui_adm_stock_hint": "Leave stock empty for unlimited.",
+    "ui_adm_stock_hint": "Leave stock empty (∞) for unlimited. 0 means sold out.",
     "ui_adm_add_item": "Add Item",
     "ui_adm_pick_item": "Choose Item",
     "ui_adm_in_shop": "In shop",
