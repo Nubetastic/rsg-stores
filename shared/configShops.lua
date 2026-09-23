@@ -22,6 +22,7 @@ Config.ItemGroups = {
         icon = 'fa-solid fa-toolbox',
         items = {
             { name = 'canteen0', buyPrice = 5 },
+            { name = 'weapon_melee_knife', buyPrice = 5 },
             { name = 'axe', buyPrice = 5 },
             { name = 'pickaxe', buyPrice = 5 },
             { name = 'shovel', buyPrice = 5 },
