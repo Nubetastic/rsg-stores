@@ -36,4 +36,4 @@ CREATE TABLE IF NOT EXISTS `rsg_shops_blips` (
   `associated_npc_id` int(11) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `idx_assoc_npc` (`associated_npc_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=737 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
