@@ -4,8 +4,9 @@ Config.ItemGroups = {
         label = 'Food & Drink',
         icon = 'fa-solid fa-drumstick-bite',
         items = {
-            { name = 'bread', sellPrice = 0.10, buyPrice = 0.50 },
-            { name = 'water', sellPrice = 0.10, buyPrice = 0.50 },
+            { name = 'bread',           sellPrice = 0.10, buyPrice = 0.50 },
+            { name = 'water',           sellPrice = 0.10, buyPrice = 0.50 },
+            { name = 'canned_apricots', sellPrice = 0.10, buyPrice = 0.50 },
         },
     },
     ["Medicine"] = {
