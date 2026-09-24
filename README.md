@@ -1,351 +1,242 @@
 # rsg-stores
 
-A configurable shop resource for **RSG-Core** on **RedM**, with a buy/sell NUI, store hours, external shop exports, optional limited stock, and dynamic pricing.
+Create NPC shopkeepers, shops and map blips in-game for **RSG-Core (RedM)**, all from an admin menu with no config editing. Players buy with a cart or sell straight back to the shop through a themed NUI. Every transaction is checked on the server and can be logged to Discord.
+
+**Version:** 2.5.0
 
 ---
 
 ## Features
 
-- **Buy/sell storefront** with categories, baskets, larger item displays, and a remembered **Show only owned items** filter on Sell.
-- **Store hours and doors** with global or individual schedules, closed-store blips, NPC removal, and temporary exit unlocking.
-- **External shop exports** for registration, live price/stock updates, and stock-change tracking.
-- **Optional limited stock** for configured and custom shops, with scheduled restocking and gradual overstock reduction.
-- **Optional dynamic pricing** with global defaults and per-shop overrides. Multi-unit transactions price each unit progressively.
-- **Server-side validation** of prices, proximity, baskets, and owned quantities, with request locking and inventory-full refunds.
-- **Cent-level prices**, optional NPCs/blips, and queued Discord transaction logging.
-- **ox_lib locales** for the storefront, transaction notifications, and webhook text.
+### For players
+- **Shop UI**: dark leather-and-gold RDR2-style interface.
+- **Buy mode**: item grid with search, sort (name / price ↑ / price ↓), stock bars, and a cart for buying several items in one purchase.
+- **Sell mode**: lists only the items you hold that this shop accepts, with the payout and shop fee shown.
+- **Quick quantity** buttons (1 / 5 / 10 / 25 / MAX). Right-click an item to remove one from the cart.
+- **Live updates**: cash, inventory and stock refresh while the shop is open.
+- **Auto-close** when you walk away or die.
+- NPCs **fade in and out** as you approach and leave.
+
+### For admins (`/npcshops`)
+- **Shop Manager panel:** a themed NUI panel (no ox_lib menus) for creating and editing NPCs, shops and blips in one form.
+- **NPCs:** create at your position (snapped to the ground), edit, teleport to, duplicate or delete.
+- **Shop contents:** searchable item picker with images; edit price and stock inline.
+- **Shop types:** Buy & Sell, Buy only, Sell only, or a plain NPC with no shop.
+- **Blips:** create, recolour, duplicate, show or hide, and delete. Shop blips are linked to their NPC and move with it.
+- Everything saves to MySQL immediately and syncs live to every player.
+
+### Security
+- **Server-side checks:** the server sets all prices and totals, and ignores any amounts the client sends.
+- **Range check:** players must be standing at the shop NPC to buy or sell.
+- **Quantities:** whole numbers only, 1–1000 per line and at most 100 lines per cart.
+- **Stock:** decremented atomically so two players can't oversell. Stock is rolled back and money refunded if any step fails.
+- **Rate limit:** each player can make one transaction every 750 ms.
+- **Admin events:** every admin event is permission-checked on the server, and admin input is cleaned before it's saved.
+- **Webhook security:** webhook URLs live in a server-only file and are never sent to clients.
+
+### Discord logging
+- Five channels: **purchases, sales, admin, security, system**.
+- Messages are queued and batched, and back off automatically when Discord rate-limits.
+- Each message shows the player's character name, CitizenID, and Discord mention.
+- Admin edits show a before → after list of changes.
+- Security alerts can ping a role, and large transactions are flagged.
+
+### Other
+- **Auto database install**: tables are created and upgraded on start.
+- **10 languages**: en, de, el, es, fr, ja, nl, pl, pt-br, ro. This covers the UI, menus, notifications, config labels and webhooks.
 
 ---
 
-## Dependencies
+## Requirements
 
-| Resource | Purpose |
+| Resource | Notes |
 |---|---|
-| [`rsg-core`](https://github.com/Rexshack-RedM/rsg-core) | Framework — player data, money, inventory |
-| [`ox_lib`](https://github.com/overextended/ox_lib) | Notifications (`ox_lib:notify`) and locale system |
-| [`ox_target`](https://github.com/overextended/ox_target) | Interaction (box zones) |
-| `rsg-inventory` | Item icons are loaded from its `html/images/` folder (configurable) |
-
-All of the above must be installed and started **before** `rsg-stores` in your `server.cfg`.
+| [rsg-core](https://github.com/Rexshack-RedM/rsg-core) | Framework |
+| [rsg-inventory](https://github.com/Rexshack-RedM/rsg-inventory) | Must provide `AddItem`, `RemoveItem`, `CanAddItem` and `GetItemCount` exports |
+| [ox_lib](https://github.com/overextended/ox_lib) | Menus, dialogs, notifications, locales |
+| [ox_target](https://github.com/overextended/ox_target) | NPC interaction |
+| [oxmysql](https://github.com/overextended/oxmysql) | Database |
 
 ---
 
 ## Installation
 
-1. Download/clone this resource into your server's resources folder as `rsg-stores`.
-2. Make sure `rsg-core`, `ox_lib`, and `ox_target` are installed and already working on your server.
-3. Add it to your `server.cfg`, after its dependencies:
-
+1. Put the `rsg-stores` folder in your server's `resources` folder, for example `resources/[rsg]/rsg-stores`.
+2. Add it to `server.cfg` **after** its dependencies:
    ```cfg
-   ensure rsg-core
+   ensure oxmysql
    ensure ox_lib
+   ensure rsg-core
    ensure ox_target
    ensure rsg-inventory
    ensure rsg-stores
    ```
+3. Start the server. The database tables are created automatically, and the console shows:
+   ```
+   [rsg-stores] Created table `rsg_shops_npcs`.
+   ...
+   [rsg-stores] Database installed/updated (3 change(s)).
+   ```
+   To install manually instead, set `Config.AutoInstallDatabase = false` and import `install/rsg-stores.sql`. `install/example.sql` has optional sample data.
+4. *(Optional)* Add your Discord webhook URLs to `server/sv_webhooks_config.lua` (see below).
+5. Join the game as an admin and type **`/npcshops`**.
 
-4. Every configured item name must exist in `rsg-core/shared/items.lua`. Labels, weights, and images come from RSG; groups and prices are defined in `shared/configShops.lua`.
-5. Set `npc = true` and a valid `npcmodel` for shops that need an NPC, or `npc = false` for a zone-only shop.
-6. Restart the resource. The included shops and coordinates are based on rsg-shops, with additional configured herb buying and item groups.
+### Updating from an older version
+Replace the files and restart. The auto-installer adds any missing columns or indexes and keeps your existing shops, items and blips.
 
 ---
 
 ## Configuration
 
-Global settings live in `shared/config.lua`. Item groups and standard shops live in `shared/configShops.lua`, loaded after the global config. External resources register custom shops through server exports; no extra global config variables are required.
+### `shared/config.lua`
 
-### Global settings
-
-| Setting | Default | Description |
+| Option | Default | Description |
 |---|---|---|
-| `Config.Money` | `'cash'` | Account used for purchases and sale payouts. Custom shops accept `cash`, `bank`, `bloodmoney`, or `gold`. Overridable per shop. |
-| `Config.Img` | `'rsg-inventory/html/images/'` | Where item icons are loaded from. Change if your inventory resource's image folder differs. |
-| `Config.MaxUniqueBasketItems` | `10` | Max number of *different* items in a buy basket at once. |
-| `Config.MaxItemQuantity` | `99` | Max quantity of a single item per basket line (buying). |
-| `Config.MaxUniqueSellItems` | `10` | Same as above, for the Sell tab. |
-| `Config.MaxSellQuantity` | `99` | Max quantity of a single item per basket line (selling). |
-| `Config.MaxInteractDistance` | `2.5` | Target interaction and exit-unlock distance. Server proximity checks allow an additional 3 units of movement/latency tolerance. |
+| `Config.AdminPermission` | `'admin'` | RSG permission required for `/npcshops` and every admin event |
+| `Config.AutoInstallDatabase` | `true` | Create and upgrade tables on start |
+| `Config.DefaultScenario` | `'WORLD_HUMAN_STAND_IMPATIENT'` | Scenario the shopkeepers play |
+| `Config.DistanceSpawn` | `20.0` | Distance at which NPCs spawn and despawn |
+| `Config.FadeIn` | `true` | Fade NPCs in and out |
+| `Config.SellPricePercentage` | `0.80` | Players get 80% of the shop price when selling (20% fee) |
+| `Config.SellAddsStock` | `true` | Items sold to a shop go back into its stock (limited-stock items only) |
+| `Config.MaxShopStock` | `100` | Most of any one item a shop will hold from player sales (`0` = no cap) |
+| `Config.TargetDistance` | `2.5` | ox_target interaction range. The server allows up to +5.0 to cover lag |
+| `Config.BlipTypes` | list | Blip sprites offered in the menu |
+| `Config.NpcModels` | list | Ped models offered in the menu |
+| `Config.BlipColors` | list | Blip colours offered in the menu |
 
-### Store hours and doors
-
-`Config.Hours` sets the global schedule: `open = 8`, `close = 20`, `enable = true`, and `unlockDuration = 30 * 1000` (milliseconds). Disabling `enable` keeps all shops open.
-
-Standard and custom shops use the same optional fields. Add them to a `Config.Shops` entry or the shop table passed to `RegisterCustomShop`:
-
+**Adding a model, blip type or colour:** the `label` must be a locale key, and that key must exist in the locale files.
 ```lua
-shop.Hours = { open = 9, close = 21 }
-shop.Doors = { 972368328, 1060413677 } -- use the door IDs for your location
+-- shared/config.lua
+{ label = 'cfg_model_sheriff', value = 's_m_m_valsheriff_01' },
+```
+```json
+// locales/en.json (and the other languages)
+"cfg_model_sheriff": "Sheriff",
 ```
 
-Omit `Hours` to follow the global schedule. Use `Hours = { alwaysOpen = true }` for an always-open shop. Opening and closing hours must be whole numbers from 0 to 23; overnight schedules are supported. Opening is inclusive and closing is exclusive. `Doors` is an optional sequential list of whole-number RedM door IDs; omit it or use an empty list for no door management.
+### `server/sv_webhooks_config.lua` (server only)
 
-Closed shops disable their target interaction, turn their blip red, remove their resource-spawned NPC, and lock configured doors. Approaching the interaction area within `Config.MaxInteractDistance` temporarily unlocks those doors for the global `unlockDuration` and shows an ox_lib notification. This checks proximity rather than whether the player is inside. Door IDs and behavior should be verified in-game.
-
-Custom-shop settings are established at registration; re-registration and item updates do not change hours or doors. **Current limitation:** closing disables target interaction but does not close an open menu or enforce hours on `OpenShop` or server transactions.
-
-### Dynamic pricing
-
-`Config.DynamicPricing` supplies defaults for standard and custom shops. The included configured shops inherit these settings; dynamic pricing is globally disabled by default.
-
-```lua
-Config.DynamicPricing = {
-    enabled = false,        -- off unless a shop turns it on
-    increasePerUnit = 0.02, -- % price increase per unit bought
-    decreasePerUnit = 0.02, -- % price decrease per unit sold back
-    minMultiplier = 0.5,    -- price can never fall below 50% of base
-    maxMultiplier = 3.0,    -- price can never exceed 300% of base
-}
-```
-
-Rates are **percentage points**: `0.02` means 0.02%, and `5` means 5%. Buying raises an item's shared buy/sell multiplier; selling lowers it. Multipliers are held in memory per shop/item and reset to `1.0x` when rsg-stores restarts.
-
-To override a shop, add `dynamicPricing = { enabled = true, increasePerUnit = 0.05 }`. Omitted fields inherit global values. Set `enabled = false` to disable it even when globally enabled, or `true` to enable it when globally disabled. Zero rates cause no movement.
-
-Custom-shop item prices are base prices before the multiplier. Exported price updates retain the current multiplier; re-registration retains the shop's dynamic pricing settings.
-
-### Discord webhook logging
-
-```lua
-Config.Webhooks = {
-    url = '',                 -- your Discord webhook URL; leave empty to disable
-    botName = 'RSG Stores',
-    botAvatar = '',           -- optional avatar image URL
-    purchaseColor = 3066993,  -- green
-    saleColor = 15105570,     -- orange
-}
-```
-
-Leave `url` empty to disable logging. When configured, completed purchases and sales post queued embeds containing the player's name, citizenid, items, and total.
-
-### Item groups and standard shops
-
-Define reusable categories in `Config.ItemGroups` in `shared/configShops.lua`. Prices always use the player's perspective: `buyPrice` is paid by the player, and `sellPrice` is received by the player. Group metadata controls the category shown in the NUI.
-
-```lua
-Config.ItemGroups = {
-    ['Food'] = {
-        id = 'food',
-        label = 'Food & Drink',
-        icon = 'fa-solid fa-drumstick-bite',
-        items = {
-            { name = 'bread', buyPrice = 0.20, sellPrice = 0.05 },
-            { name = 'water', buyPrice = 0.10, sellPrice = 0.025 },
-        },
-    },
-}
-
-Config.Shops = {
-    {
-        id = 'rho_general_store',
-        label = 'Rhodes General Store',
-        coords = vector4(1329.80, -1294.37, 77.02, 60.72),
-        npc = false,
-        npcmodel = 'u_m_m_rhdgenstoreowner_01',
-        blip = {
-            show = true,
-            sprite = 'blip_shop_store',
-            scale = 0.2,
-            label = 'Rhodes General Store',
-        },
-        money = 'cash',
-        buy = {{'Food', 0.05}},
-        sell = {{'Food', -0.01}},
-    },
-}
-```
-
-Add groups and shops to the existing tables. Each `buy` or `sell` entry is `{groupName, adjustment}`: a flat currency adjustment to that group's prices for that direction. Above, bread costs 0.25 to buy and pays 0.04 to sell before dynamic pricing. Adjusted base prices have a minimum of 0.01.
-
-- `id` identifies the shop and must be unique; `label` is its NUI title.
-- `coords` is the target zone centre and heading. NPCs spawn at z - 1.0.
-- `npc = false` disables the NPC. `npc = true` requires a valid `npcmodel`. The target zone is created independently of NPC spawning.
-- `blip.show` controls the map blip; `sprite` uses the configured RedM blip name.
-- `money` overrides `Config.Money` for both purchases and sale payouts.
-- An item needs a price for the relevant direction to appear on that tab. Omit a direction's price to exclude it.
-- `buy = {}` creates a sell-only shop and opens Sell by default when a sell list is available. `sell = {}` creates a buy-only shop without a Sell tab.
-- The Sell tab's **Show only owned items** checkbox hides items the player owns zero of and retains its preference across reopening.
-
-### Store types
-
-| Type | Setup | Pricing and inventory |
-|---|---|---|
-| Standard configured shop | `Config.Shops` and `Config.ItemGroups` in `shared/configShops.lua` | Group base prices, per-group adjustments, optional dynamic pricing, and finite or unlimited stock tracked separately per shop. |
-| Custom shop with unlimited stock | Server `RegisterCustomShop` export; omit item `amount` | Supplied base prices, optional dynamic pricing, unlimited store inventory, no stock depletion or restocking. |
-| Custom shop with finite stock | Server `RegisterCustomShop` export; set item `amount` and `maxStock` | Supplied base prices, optional dynamic pricing, tracked stock, optional scheduled restocking, and a soft restocking cap. |
-
-General stores, gunsmiths, doctors, and other themed stores are built by choosing their groups. They do not need separate shop-type flags. Both standard and custom shops can be buy-only, sell-only, or buy/sell, and use the same NUI and target zones.
-
-### Shop stock and restocking
-
-Configured and custom shops use the same item stock fields and shop-level restock interval. Both accept `{groupName, adjustment}` buy/sell references; use an adjustment of `0` to leave the supplied base price unchanged.
-
-For a configured shop, add stock fields to an item in `Config.ItemGroups` and set `restockTime` on each shop that should restock it:
-
-```lua
--- Inside a Config.ItemGroups category's items list:
-{ name = 'bread', buyPrice = 0.20, sellPrice = 0.05,
-    amount = 10, maxStock = 20, restock = 5 },
-
--- Inside the corresponding Config.Shops entry:
-restockTime = 15, -- minutes
-```
-
-Each shop using that group gets its own stock copy, initialized from `amount`. Sales and purchases at one store do not change another store's stock. To give stores different starting stock settings, define separate item groups. The included config omits stock fields and remains unlimited.
-
-External resources supply their own shop/group tables to `RegisterCustomShop`, as shown below. Only registered custom shops support exported price/stock updates; configured shops change through transactions, dynamic pricing, and restocking.
-
-#### Without stock limits
-
-Omit stock fields from each item. Players can buy without depleting store inventory; player sales do not create tracked stock. Prices can still be updated through the exports.
-
-```lua
-local itemGroups = {
-    ['Trading'] = {
-        id = 'trading',
-        label = 'Trading',
-        icon = 'fa-solid fa-boxes-stacked',
-        items = {
-            { name = 't_hay', buyPrice = 15.00, sellPrice = 8.00 },
-        },
-    },
-}
-
-local shop = {
-    id = 'rhodes-trading-unlimited',
-    label = 'Rhodes Trading',
-    coords = vector4(1329.80, -1294.37, 77.02, 60.72),
-    npc = false,
-    buy = {{'Trading', 0}},
-    sell = {{'Trading', 0}},
-}
-
-local success, reason = exports['rsg-stores']:RegisterCustomShop(shop, itemGroups)
-```
-
-#### With stock limits
-
-Use the same group and shop structure, adding stock fields to the items and a restock interval to the shop. For example, replace the item above and set the shop's interval before registration:
-
-```lua
-itemGroups['Trading'].items = {
-    { name = 't_hay', buyPrice = 15.00, sellPrice = 8.00,
-        amount = 10, maxStock = 50, restock = 15 },
-}
-shop.id = 'rhodes-trading-finite'
-shop.restockTime = 15 -- minutes
-
-local success, reason = exports['rsg-stores']:RegisterCustomShop(shop, itemGroups)
-```
-
-These examples are alternative setups. Both shop types can mix finite and unlimited items. Basket limits and player-owned sale quantities apply to both modes. `maxStock` limits restocking; it does not reject player sales above that amount.
-
-#### Restocking rules
-
-Finite items require nonnegative whole `amount` and `maxStock`; optional `restock` is also a nonnegative whole quantity. Purchases reduce stock and cannot exceed availability; sales increase it, even above the soft cap. Omitted/zero `restockTime` disables scheduled restocking for the shop.
-
-`Config.TargetStock = true` globally enables target-based restocking for limited-stock items in both shop types. Their starting `amount` is saved as the target; later transactions, exported stock updates, and re-registration do not change it. Use a starting amount at or below `maxStock`. Unlimited items are unaffected.
-
-With target stock enabled, each scheduled tick follows these rules:
-
-- **Below target:** add `restock`, capped at `maxStock`.
-- **From target through max:** a 50/50 choice adds or removes `restock`, with the result kept between zero and `maxStock`. A decrease can take stock below target; the next tick then increases it. At max, an increase leaves stock unchanged.
-- **Above max:** only reduce stock using the overstock tiers below.
-
-Set `Config.TargetStock = false` to disable target behavior globally and always add `restock` up to `maxStock` when at or below the cap. There is no per-shop toggle.
-
-Above the cap, `Config.OverstockReduction` compares excess stock to the restock quantity and subtracts a larger quantity from current stock:
-
-| Excess stock / restock | Reduction |
+| Option | Description |
 |---|---|
-| Up to 2 | restock * 1.5 |
-| Above 2, up to 4 | restock * 2 |
-| Above 4 | restock * 3 |
+| `Enabled` | Master switch |
+| `BotName` / `AvatarUrl` | Name and avatar shown on Discord messages |
+| `Urls.purchases` | Cart purchases and refunds |
+| `Urls.sales` | Items sold to shops |
+| `Urls.admin` | NPC, shop and blip create / edit / delete (with a list of changes) |
+| `Urls.security` | Executor attempts, out-of-range trades, malformed data, large transactions |
+| `Urls.system` | Resource start, database install, database failures |
+| `SecurityPing` | Role or user to ping on security alerts, e.g. `'<@&123456789012345678>'` |
+| `LargeTransaction` | Cash amount that flags a transaction as "Large" and copies it to security |
+| `ShowIdentifiers` | Which identifiers to show: `license`, `discord`, `steam`, `ip` |
+| `FlushInterval` / `EmbedsPerPost` / `MaxQueue` | Queue tuning (the defaults are fine) |
 
-Reductions round to the nearest whole item and stop at `maxStock`. With maxStock 20 and restock 5, stock 30 becomes 22, while stock 50 becomes 35. Tiers are checked in ascending order; `math.huge` means infinity, so the final tier covers all higher ratios. Omitted/zero `restock` skips that item.
+Leave any URL as `''` to turn that channel off. You can point several channels at the same webhook.
 
-Stock is held in memory and resets to configured or registered amounts when rsg-stores restarts. Custom-shop owners can implement persistence through the stock event and exports; configured shops have no persistence/update interface.
-
-### Exports and custom shop integration
-
-Start rsg-stores before the external resource and add `dependency 'rsg-stores'` to that resource's manifest. Shops may register before or after players join; registration syncs their setup to connected clients without duplicate zones, NPCs, or blips.
-
-| Interface | Side | Purpose and return value |
-|---|---|---|
-| `RegisterCustomShop(shop, itemGroups)` | Server | Register a shop owned by the calling resource. Returns `true` or `false, reason`. |
-| `UpdateCustomShopItems(shopId, updates)` | Server | Set existing items' absolute stock and/or prices. Returns `true` or `false, reason`. |
-| `GetCustomShopItems(shopId)` | Server | Read a copied snapshot keyed by item name. Returns `items` or `nil, reason`. |
-| `OpenShop(shopId)` | Client | Request opening a known shop. Returns whether the asynchronous request started, not whether opening succeeded. Server state requests check proximity. |
-| `rsg-stores:server:CustomShopStockChanged` | Server-local event | Report resulting stock after purchases, sales, restocking, or exported stock changes. |
-
-```lua
--- External resource's server code, after its config has loaded:
-local success, reason = exports['rsg-stores']:RegisterCustomShop(shop, Config.ItemGroups)
-
--- Updates are keyed by item name. Omitted fields remain unchanged.
-local success, reason = exports['rsg-stores']:UpdateCustomShopItems(shop.id, {
-    t_hay = { amount = 12, buyPrice = 18.00, sellPrice = 9.00 },
-})
-
-local items, reason = exports['rsg-stores']:GetCustomShopItems(shop.id)
+**Test it** from the server console:
+```
+storeswebhooktest
 ```
 
-Only the owning resource can update or read a custom shop. Editing its original config tables does not update the live shop; use the export.
-
-- Updates accept only `amount`, `buyPrice`, and `sellPrice` for existing items. Stock amounts are absolute values, not increments.
-- Set a price to `false` to hide the item from that tab, or a number of at least `0.01` to show it again if its group is listed. Disable both directions to hide it completely. Nil/omitted fields stay unchanged.
-- Categories, item membership, stock mode, caps, restock settings, and other shop settings cannot be changed through item updates.
-- Registration requires at least one numeric price per item; `false` is supported only in updates.
-- Busy shops reject registration/updates with a reason. Retry on the resource's next update cycle.
-
-Re-registration replaces existing prices and amounts but preserves all other settings and requires the same item list and stock modes. To apply changed shop settings, restart rsg-stores, then the registering resources. External resources should also re-register when rsg-stores starts.
-
-Changes sync to clients and refresh an open custom shop, clearing its baskets while retaining its selected tab, valid category, and owned-items preference. Checkout checks the shop revision to reject outdated baskets.
-
-```lua
-AddEventHandler('rsg-stores:server:CustomShopStockChanged', function(shopId, changedItems, reason)
-    if shopId ~= 'gen-rhodes-trading' then return end
-    if changedItems.t_hay then
-        local amount = changedItems.t_hay.amount -- resulting absolute stock
-        -- Update this resource's demand or persistence tracking.
-    end
-end)
+### Language
+Set the locale in `server.cfg`:
+```cfg
+setr ox:locale "de"
 ```
-
-The stock event reasons are `buy`, `sell`, `restock`, and `update`. Price-only updates do not emit it. Filter by your shop IDs and avoid sending another stock update in response to every `update` notification.
-
-Disable duplicate shop interactions, checkout, and restock timers in integrated resources. They can retain demand calculations and persistence, then send changes through exports.
-
-For rotating selections, register the full possible item list once, then update directional prices to show or hide items. For example, a pelt trader can register all pelts in one group and enable only its current selection.
-
-### Locales
-
-Storefront text, transaction notifications, and Discord embed text use `locales/en.json`. Duplicate it as, for example, `locales/de.json`, translate the values while retaining `%s`/`%d` placeholders in order, and select that language through ox_lib's locale convar. The temporary door-unlock notification is currently hard-coded in `client/hours.lua`.
+Available: `en`, `de`, `el`, `es`, `fr`, `ja`, `nl`, `pl`, `pt-br`, `ro`.
 
 ---
 
-## File structure
+## Usage
 
-```text
+### The Shop Manager panel
+`/npcshops` opens the **Shop Manager**, a panel docked on the right of the screen so you can still see the world. It has two tabs, **NPCs** and **Blips**, each with a search box and a list. Click any row to edit it. Press **Esc** to go back one step or close the panel.
+
+### Creating a shop
+1. Stand where the shopkeeper should be, facing the way they should face.
+2. `/npcshops` → **New NPC**. The position fields fill in from where you're standing (at ground level). Click **Use My Position** at any time to refresh them.
+3. Enter a name and pick a model.
+4. Leave **This NPC is a shopkeeper** ticked, then enter a **Shop ID** (internal, e.g. `valentine_general`), a **Shop Label** (e.g. *Valentine General Store*) and the shop type.
+5. **Add Item** opens a searchable list of every shared item (items already in the shop are greyed out). Pick one, then set its **price** and **stock** in the table. Leave stock empty for unlimited.
+6. *(Optional)* Tick **Create a blip for this shop?** and choose the name, icon and colour. The name follows the shop label unless you change it.
+7. Click **Create**. The NPC appears for everyone straight away.
+
+### Editing an NPC
+Click an NPC in the list to open the same form. You can change any field, edit prices and stock in place, add or remove items, then **Save**. A linked blip moves with the NPC. The footer buttons let you **Teleport** to it, **Duplicate** it at your position (with its shop and blip, and separate stock) or **Delete** it (with a confirmation; linked blips are deleted too).
+
+### Managing blips
+On the **Blips** tab, **New Blip** creates one at your position. Click a blip to rename it or change its icon, colour or position. The footer buttons let you **Teleport**, toggle **Visibility** (only on your map), **Duplicate** at your position or **Delete**.
+
+### Stock
+- Stock goes down with each purchase.
+- Selling to a shop adds the items back to its stock when `Config.SellAddsStock` is on (limited-stock items only). The shop refuses sales that would push stock past `Config.MaxShopStock`.
+- To restock, use **Add Items** with the same item and the new stock amount.
+- Items loaded from the database with no stock value (NULL) are unlimited and show as **∞**. Stock set in the admin menu is always a number.
+
+### Player controls
+| Action | How |
+|---|---|
+| Open shop | Target the shopkeeper → *Trade with …* |
+| Add to cart | Click an item, pick a quantity, **Add to Cart** |
+| Remove one from cart | Right-click the item |
+| Buy | **Purchase** |
+| Sell | **Sell** tab, click an item, pick a quantity, **Confirm Sale** |
+| Close | **Esc**, the close button, or walk away |
+
+---
+
+## For developers
+
+**Send your own log through the rsg-stores queue:**
+```lua
+exports['rsg-stores']:SendWebhook('admin', 'Title', 'Description', source, {
+    { name = 'Field', value = 'Value', inline = true },
+})
+```
+
+**Database tables:**
+
+| Table | Purpose |
+|---|---|
+| `rsg_shops_npcs` | NPC position, model and shop settings |
+| `rsg_shops_items` | Items per NPC (`npc_id`), with price and stock |
+| `rsg_shops_blips` | Blips, optionally linked to an NPC (`associated_npc_id`) |
+
+**File layout:**
+```
 rsg-stores/
-  client/hours.lua        -- schedules, doors, temporary exit unlocking
-  client/client.lua       -- NUI, target zones, optional NPCs and blips
-  server/server.lua       -- transactions, custom shops, stock and pricing
-  server/webhook.lua      -- Discord webhook queue/sender
-  server/versionchecker.lua
-  shared/config.lua       -- global settings
-  shared/configShops.lua  -- standard shop definitions and item groups
-  locales/en.json         -- player-facing and webhook text
-  ui/index.html
-  ui/script.js
-  ui/style.css
-  fxmanifest.lua
+├── fxmanifest.lua
+├── client/client.lua             NPC spawning, shop NUI bridge, admin menu
+├── server/
+│   ├── sv_webhooks_config.lua    Discord settings (server only)
+│   ├── sv_webhooks.lua           Webhook queue
+│   ├── sv_database.lua           Auto installer / migrator
+│   ├── server.lua                Transactions, admin events, cache
+│   └── versionchecker.lua        Update check on start
+├── shared/config.lua             General settings
+├── html/                         NUI: shop (script.js, style.css) + Shop Manager (admin.js, admin.css)
+├── locales/*.json                10 languages
+└── install/
+    ├── rsg-stores.sql            Manual install (optional)
+    └── example.sql               Sample shop data (optional)
 ```
 
 ---
 
 ## Troubleshooting
 
-- **An item does not show up**: confirm its name exists in `RSGCore.Shared.Items`, its group is listed on the correct shop tab, and it has that direction's price. Also check the owned-items filter on Sell.
-- **A shop is not interactable**: check opening hours, zone coordinates, and that ox_target started first. NPC settings do not control interaction. For custom shops, inspect the registration export's success/reason.
-- **Nothing posts to Discord** — confirm `Config.Webhooks.url` is set and check the console for `Discord webhook post failed with status ...`, which indicates Discord rejected the request (bad/expired webhook URL is the usual cause).
-- **Custom stock or prices do not change**: use the update export rather than editing an already-registered config table. Re-registration applies incoming prices and stock. Restart rsg-stores and then the registering resource after loading code changes.
+| Problem | Fix |
+|---|---|
+| `Database retry…` in the console | The database user needs `CREATE` / `ALTER` rights, or set `AutoInstallDatabase = false` and import the SQL |
+| `/npcshops` says access denied | Give yourself the permission in `Config.AdminPermission` (e.g. `add_principal identifier.license:xxx group.admin`) |
+| "You are too far from the shop" | Stand next to the NPC. If you've moved the NPC, check its coordinates are at ground level |
+| "The shop only has room for …" when selling | The item has reached `Config.MaxShopStock`. Raise the cap, set it to `0`, or turn off `Config.SellAddsStock` |
+| NPC doesn't appear | Check the model name is valid. Invalid models are logged in the F8 console |
+| Item images missing | Images come from `rsg-inventory/html/images/`; a fallback icon is shown if the image is missing |
+| No Discord messages | Check the URLs, then run `storeswebhooktest` |
+| Raw key such as `cfg_model_x` shows | That key is missing from `locales/en.json` |
+
+---
+
+## Credits
+Original script by **Phil**. Security rewrite, webhooks, localisation and auto-install for RSG-Core.

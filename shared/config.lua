@@ -1,99 +1,82 @@
 Config = {}
 
-Config.Hours = {
-    open = 8,
-    close = 20,
-    enable = true,
-    unlockDuration = 30 * 1000,
+-- Required permission to use the Blip/NPC menu
+Config.AdminPermission = 'admin'
+
+-- Create/upgrade the database tables automatically on resource start.
+-- Set to false if you prefer to import rsg-stores.sql by hand.
+Config.AutoInstallDatabase = true
+
+--  NPC scenario
+Config.DefaultScenario = 'WORLD_HUMAN_STAND_IMPATIENT'
+Config.DistanceSpawn = 20.0  -- Distance before spawning/despawning the NPC (GTA Units)
+Config.FadeIn = true         -- Enable fade in/out effect
+Config.SellPricePercentage = 0.80  -- Player gets 80% (20% shop fee)
+Config.SellAddsStock = true        -- Items sold to a shop are added back to its stock (limited-stock items only)
+Config.MaxShopStock = 100          -- Most of any one item a shop will hold from player sales (0 = no cap)
+Config.TargetDistance = 2.5       -- ox_target range; server allows +5.0 for latency
+
+
+-- Labels are locale keys (locales/*.json), translated when the admin menu opens.
+Config.BlipTypes = {
+    { label = 'cfg_blip_coach', value = 1012165077 },
+    { label = 'cfg_blip_corpse', value = -1116208957 },
+    { label = 'cfg_blip_death', value = 350569997 },
+    { label = 'cfg_blip_loan_shark', value = 1838354131 },
+    { label = 'cfg_blip_newspaper', value = 587827268 },
+    { label = 'cfg_blip_sheriff', value = -693644997 },
+    { label = 'cfg_blip_animal', value = -1646261997 },
+    { label = 'cfg_blip_camp', value = -910004446 },
+    { label = 'cfg_blip_camp_fire', value = 773587962 },
+    { label = 'cfg_blip_house', value = 1586273744 },
+    { label = 'cfg_blip_bank', value = -2128054417 },
+    { label = 'cfg_blip_magnify', value = 150441873 },
+    { label = 'cfg_blip_hideout', value = -428972082 },
+    { label = 'cfg_blip_saloon', value = 1879260108 },
+    { label = 'cfg_blip_letter', value = -2100584570 },
+    { label = 'cfg_blip_blacksmith', value = -758970771 },
+    { label = 'cfg_blip_barber', value = -2090472724 },
+    { label = 'cfg_blip_doctor', value = -1739686743 },
+    { label = 'cfg_blip_gunsmith', value = -145868367 },
+    { label = 'cfg_blip_stable', value = 1938782895 },
+    { label = 'cfg_blip_market', value = 819673798 },
+    { label = 'cfg_blip_fishing', value = -852241114 },
+    { label = 'cfg_blip_food', value = -1852063472 },
+    { label = 'cfg_blip_group', value = -180188163 },
+    { label = 'cfg_blip_enemy', value = -507621590 },
+    { label = 'cfg_blip_boat', value = -1018164873 },
+    { label = 'cfg_blip_moonshine', value = -392465725 },
+    { label = 'cfg_blip_wild_beast', value = -1085232344 },
+    { label = 'cfg_blip_train', value = 1258184551 },
+    { label = 'cfg_blip_mine', value = 1220803671 },
 }
 
--- Account type charged on checkout. Must be one of the accounts on
--- Player.PlayerData.money ('cash', 'bank', 'bloodmoney', 'gold').
--- Can be overridden per-shop in configShops.lua with shop.money.
-Config.Money = 'cash'
-
--- Item icons are loaded straight from rsg-inventory's image folder, e.g.
--- nui://rsg-inventory/html/images/bread.png -- change this if your image
--- folder lives in a different resource.
-Config.Img = 'rsg-inventory/html/images/'
-
--- Maximum number of *unique* items a player can hold in their basket at
--- once. Quantity per item is unlimited (still capped per-line below).
-Config.MaxUniqueBasketItems = 10
-
--- Highest quantity of a single item allowed in one basket line.
-Config.MaxItemQuantity = 99
-
--- Same two caps as above, but for the Sell tab's basket. A shop only shows
--- a Sell tab at all if it has a `sell` list defined in configShops.lua.
-Config.MaxUniqueSellItems = 10
-Config.MaxSellQuantity = 99
-
--- Max distance (in game units) a player may be from a shop's coords when
--- the server actually processes getShopState/checkout/sellCheckout. Keeps
--- this in sync with the ox_target interaction distance below so players
--- can't open a shop, walk away, and keep buying/selling remotely.
-Config.MaxInteractDistance = 2.5
-
--- Global toggle for limited-stock items in configured and custom shops.
--- When enabled, each item's starting amount is saved as its target stock.
--- Purchases, sales, and exported stock updates do not change that target.
--- On each scheduled restock tick:
---   Below target: add the item's restock quantity, up to maxStock.
---   At/above target through maxStock: 50/50 chance to add or remove restock.
---   Above maxStock: only reduce stock, using OverstockReduction tiers below.
--- Random increases stop at maxStock; decreases stop at zero and may fall
--- below target, causing the next tick to increase stock. At maxStock, a
--- randomly selected increase leaves stock unchanged.
--- Example: amount = 10, maxStock = 50, restock = 5.
--- Stock 5 becomes 10; stock 20 becomes 15 or 25; stock 50 becomes 45 or 50.
--- When disabled, stock at/below maxStock always increases toward maxStock.
--- Above-max reductions apply in either mode. Omitted/zero restock skips
--- the item; omitted/zero shop restockTime disables scheduled restocking.
-Config.TargetStock = true
-
--- Compare excess stock / restock against these tiers, in ascending order.
--- Reduction is restock * multiplier, rounded to whole items, stopping at maxStock.
-Config.OverstockReduction = {
-    { maxRatio = 2, multiplier = 1.5 },
-    { maxRatio = 4, multiplier = 2 },
-    { maxRatio = math.huge, multiplier = 3 }, -- all higher ratios
+Config.NpcModels = {
+    { label = 'cfg_model_rough_traveller', value = 'A_M_M_BiVRoughTravellers_01' },
+    { label = 'cfg_model_blackwater_townfolk', value = 'A_M_M_BlWTownfolk_01' },
+    { label = 'cfg_model_emerald_farmhand', value = 'A_M_M_EmRFarmHand_01' },
+    { label = 'cfg_model_sd_dock_foreman', value = 'A_M_M_SDDockForeman_01' },
+    { label = 'cfg_model_female_doctor', value = 'am_valentinedoctors_females_01' },
+    { label = 'cfg_model_high_society', value = 'a_m_m_gamhighsociety_01' },
+    { label = 'cfg_model_butler', value = 'cs_braithwaitebutler' },
+    { label = 'cfg_model_elder_townfolk', value = 'a_m_o_waptownfolk_01' },
+    { label = 'cfg_model_fish_vendor', value = 'cs_fishcollector' },
+    { label = 'cfg_model_butcher', value = 'u_m_m_valbutcher_01' },
+    { label = 'cfg_model_bartender', value = 'u_m_m_tumbartender_01' },
+    { label = 'cfg_model_rhodes_owner', value = 'u_m_m_rhdgenstoreowner_02' },
+    { label = 'cfg_model_strawberry_male', value = 'cr_strawberry_males_01' },
+    { label = 'cfg_model_braithwaite_male', value = 'msp_braithwaites1_males_01' },
+    { label = 'cfg_model_undertaker', value = 'u_m_m_rhdundertaker_01' }
 }
 
--- ---------------------------------------------------------------------------
--- Dynamic pricing: every unit a player buys nudges that item's price UP at
--- that shop, and every unit sold back nudges it back DOWN -- the same
--- price moves both ways, so buying and selling the same item pull against
--- each other. This is tracked as an in-memory multiplier per shop+item
--- (starting at 1.0x) and is NOT saved to a database -- it resets to 1.0x
--- whenever the resource or server restarts.
---
--- All percent fields are percentage POINTS, not fractions:
--- 0.02 = 0.02%, 5 = 5%.
---
--- This is a global default. Override any of it per-shop with a
--- `dynamicPricing = { ... }` table on that shop (see Config.Shops in configShops.lua) --
--- any field left out there falls back to the value here.
--- ---------------------------------------------------------------------------
-Config.DynamicPricing = {
-    enabled = false,        -- off unless a shop turns it on
-    increasePerUnit = 0.02, -- % price increase per unit bought
-    decreasePerUnit = 0.02, -- % price decrease per unit sold back
-    minMultiplier = 0.5,    -- price can never fall below 50% of its configured base price
-    maxMultiplier = 3.0,    -- price can never exceed 300% of its configured base price
-}
-
--- ---------------------------------------------------------------------------
--- Discord webhook logging. Every completed purchase and sale is posted to
--- this webhook URL as an embed (player name/citizenid, items, and total).
--- Leave `url` empty to disable logging entirely -- nothing is sent and no
--- HTTP requests are made. Messages are queued and sent one at a time so a
--- burst of transactions can never trip Discord's per-webhook rate limit.
--- ---------------------------------------------------------------------------
-Config.Webhooks = {
-    url = '', -- e.g. 'https://discord.com/api/webhooks/XXXXXXXX/XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
-    botName = 'RSG Stores',
-    botAvatar = '', -- optional image URL used as the webhook's avatar
-    purchaseColor = 3066993,  -- green
-    saleColor = 15105570,     -- orange
+Config.BlipColors = {
+    { label = 'cfg_color_white', value = 'BLIP_MODIFIER_MP_COLOR_32' },
+    { label = 'cfg_color_red', value = 'BLIP_MODIFIER_MP_COLOR_2' },
+    { label = 'cfg_color_purple', value = 'BLIP_MODIFIER_MP_COLOR_3' },
+    { label = 'cfg_color_orange', value = 'BLIP_MODIFIER_MP_COLOR_4' },
+    { label = 'cfg_color_light_blue', value = 'BLIP_MODIFIER_MP_COLOR_5' },
+    { label = 'cfg_color_yellow', value = 'BLIP_MODIFIER_MP_COLOR_6' },
+    { label = 'cfg_color_pink', value = 'BLIP_MODIFIER_MP_COLOR_7' },
+    { label = 'cfg_color_green', value = 'BLIP_MODIFIER_MP_COLOR_8' },
+    { label = 'cfg_color_dark_blue', value = 'BLIP_MODIFIER_MP_COLOR_9' },
 }
