@@ -3,22 +3,22 @@ rdr3_warning 'I acknowledge that this is a prerelease build of RedM, and I am aw
 game 'rdr3'
 
 description 'rsg-stores'
-version '2.1.1'
+version '2.0.4'
 
 shared_scripts {
     '@ox_lib/init.lua',
-    'shared/config.lua'
+    'shared/config.lua',
+    'shared/configShops.lua',
+    'shared/jobs.lua',
 }
 
 client_scripts {
-    'client/client.lua'
+    'client/hours.lua',
+    'client/client.lua',
 }
 
 server_scripts {
-    '@oxmysql/lib/MySQL.lua',
-    'server/sv_webhooks_config.lua',
-    'server/sv_webhooks.lua',
-    'server/sv_database.lua',
+    'server/webhook.lua',
     'server/server.lua',
     'server/versionchecker.lua'
 }
@@ -27,18 +27,15 @@ dependencies {
     'rsg-core',
     'ox_lib',
     'ox_target',
-    'oxmysql'
 }
 
-ui_page 'html/index.html'
+ui_page 'ui/index.html'
 
 files {
-    'locales/*.json',
-    'html/index.html',
-    'html/style.css',
-    'html/script.js',
-    'html/admin.js',
-    'html/admin.css'
+    'ui/index.html',
+    'ui/style.css',
+    'ui/script.js',
+    'locales/*.json'
 }
 
 lua54 'yes'
