@@ -176,8 +176,11 @@
                 <div class="item-details">
                     <div class="item-icon-wrap"><img src="${escapeHtml(item.image)}" onerror="this.style.visibility='hidden'"></div>
                     <div class="item-info">
-                        <div class="item-label">${escapeHtml(item.label)}</div>
-                        <div class="item-price">$${fmtMoney(item.price)}</div>
+                        <div class="item-heading">
+                            <div class="item-label">${escapeHtml(item.label)}</div>
+                            <div class="item-price">$${fmtMoney(item.price)}</div>
+                        </div>
+                        <div class="item-description">${escapeHtml(item.description)}</div>
                         ${ownedLine}
                         ${stockLine}
                     </div>

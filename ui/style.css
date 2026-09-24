@@ -307,7 +307,7 @@ html, body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    height: 160px;
+    min-height: 180px;
     padding: 14px 10px 12px;
     border-radius: 2px;
     border: 1px solid rgba(201, 162, 75, 0.18);
@@ -321,10 +321,9 @@ html, body {
 }
 
 .item-details {
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr 2fr;
     align-items: center;
-    justify-content: center;
-    gap: 6px;
     width: 100%;
     flex: 1;
     min-height: 0;
@@ -334,8 +333,8 @@ html, body {
 .item-info {
     min-width: 0;
     border-left: 1px solid var(--rdr-gold-dim);
-    padding-left: 6px;
-    text-align: center;
+    padding: 0 8px 0 10px;
+    text-align: left;
     overflow-wrap: anywhere;
 }
 
@@ -349,6 +348,7 @@ html, body {
     display: flex;
     align-items: center;
     justify-content: center;
+    justify-self: center;
     overflow: hidden;
 }
 
@@ -358,29 +358,41 @@ html, body {
     object-fit: contain;
 }
 
+.item-heading {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 8px;
+    margin-bottom: 7px;
+}
+
 .item-label {
     font-size: 15px;
-    text-align: center;
+    text-align: left;
     letter-spacing: 0.3px;
-    margin-bottom: 4px;
-    min-height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
 }
 
 .item-price {
     font-size: 15.6px;
     font-weight: 600;
     color: var(--rdr-amber);
-    margin-bottom: 4px;
+    text-align: right;
+    white-space: nowrap;
+}
+
+.item-description {
+    font-size: 12px;
+    line-height: 1.35;
+    color: var(--rdr-muted);
+    margin-bottom: 7px;
+    overflow-wrap: anywhere;
 }
 
 .item-owned {
     font-size: 12.6px;
     font-style: italic;
     color: var(--rdr-muted);
-    margin-bottom: 8px;
+    margin-bottom: 0;
 }
 
 .add-btn {

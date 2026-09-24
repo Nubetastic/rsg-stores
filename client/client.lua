@@ -71,6 +71,7 @@ local function buildCategoryPayload(groups, direction, shop, priceOverrides)
                 items[#items + 1] = {
                     name = entry.name,
                     label = itemData.label or entry.name,
+                    description = itemData.description,
                     price = (priceOverrides and priceOverrides[entry.name]) or price,
                     image = 'nui://' .. Config.Img .. (itemData.image or (entry.name .. '.png')),
                 }
