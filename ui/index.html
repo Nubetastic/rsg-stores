@@ -10,10 +10,9 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div id="vignette"></div>
-
 <div id="app" class="hidden">
-    <div class="shop-panel">
+    <div id="scaleRoot" class="scale-root">
+    <div class="shop-panel" data-scale-bound>
         <div class="shop-header">
             <button id="closeBtn" class="icon-btn">
                 <i class="fa-solid fa-xmark"></i>
@@ -22,11 +21,9 @@
                 <div class="shop-title" id="shopTitle"></div>
                 <div class="shop-subtitle" id="shopSubtitle"></div>
             </div>
-            <div class="basket-count-wrap">
-                <i class="fa-solid fa-basket-shopping"></i>
-                <span id="basketCount">0</span>/<span id="basketMax">10</span>
-            </div>
         </div>
+
+        <button id="openScaleBtn" class="scale-open-btn" type="button">Scale</button>
 
         <div class="mode-tabs" id="modeTabs">
             <button class="mode-tab active" id="buyTab" data-mode="buy"></button>
@@ -43,29 +40,53 @@
             <div class="category-rail" id="categoryRail"></div>
 
             <div class="item-grid" id="itemGrid"></div>
-        </div>
 
-        <div class="basket-bar">
-            <div class="basket-header">
-                <span class="basket-heading" id="basketHeading"></span>
-                <span class="basket-hint"><span id="basketHintPrefix"></span> <span id="basketMaxHint">10</span> <span id="basketHintSuffix"></span></span>
-            </div>
-
-            <div class="basket-rows" id="basketRows">
-                <div class="basket-empty" id="basketEmpty"></div>
-            </div>
-
-            <div class="basket-footer">
-                <div class="basket-total">
-                    <span id="basketTotalLabel"></span> <span id="basketTotal">$0</span>
+            <div class="basket-bar">
+                <div class="basket-header">
+                    <span class="basket-heading" id="basketHeading"></span>
+                    <div class="basket-count-wrap">
+                        <i class="fa-solid fa-basket-shopping"></i>
+                        <span id="basketCount">0</span>/<span id="basketMax">10</span>
+                    </div>
+                    <span class="basket-hint"><span id="basketHintPrefix"></span> <span id="basketMaxHint">10</span> <span id="basketHintSuffix"></span></span>
                 </div>
-                <div class="basket-actions">
-                    <button id="clearBtn" class="wood-btn muted"></button>
-                    <button id="checkoutBtn" class="wood-btn primary" disabled></button>
+
+                <div class="basket-rows" id="basketRows">
+                    <div class="basket-empty" id="basketEmpty"></div>
+                </div>
+
+                <div class="basket-footer">
+                    <div class="basket-total">
+                        <span id="basketTotalLabel"></span> <span id="basketTotal">$0</span>
+                    </div>
+                    <div class="basket-actions">
+                        <button id="clearBtn" class="wood-btn muted"></button>
+                        <button id="checkoutBtn" class="wood-btn primary" disabled></button>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
+    </div>
+
+    <section id="scaleMenu" class="scale-menu hidden" aria-label="Scale controls">
+        <div class="scale-control">
+            <div class="scale-header">
+                <span>Menu Scale</span>
+                <span id="scaleValue">100%</span>
+            </div>
+
+            <input id="scaleSlider" type="range" min="75" max="125" value="100">
+
+            <div class="scale-marks" aria-hidden="true">
+                <span>75%</span>
+                <span>100%</span>
+                <span>125%</span>
+            </div>
+        </div>
+
+        <button id="closeScaleBtn" class="scale-close-btn" type="button">Close</button>
+    </section>
 </div>
 
 <div id="toasts"></div>

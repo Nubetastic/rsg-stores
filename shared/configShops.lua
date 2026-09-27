@@ -156,8 +156,9 @@ Config.ItemGroups = {
             { name = 'weapon_shotgun_pump', sellPrice = 37.00, buyPrice = 148.00 },
             { name = 'weapon_shotgun_repeating', sellPrice = 46.25, buyPrice = 185.00 },
             { name = 'weapon_shotgun_semiauto', sellPrice = 56.25, buyPrice = 225.00 },
-            { name = 'WEAPON_BOW', sellPrice = 12.50, buyPrice = 50.00 },
-            { name = 'WEAPON_MELEE_KNIFE', sellPrice = 2.50, buyPrice = 10.00 },
+            { name = 'weapon_bow', sellPrice = 12.50, buyPrice = 50.00 },
+            { name = 'weapon_bow_improved', sellPrice = 25.00, buyPrice = 100.00 },
+            { name = 'weapon_melee_knife', sellPrice = 2.50, buyPrice = 10.00 },
             { name = 'weapon_lasso', sellPrice = 5.00, buyPrice = 20.00 },
         },
     },
@@ -234,11 +235,10 @@ Config.ItemGroups = {
             { name = 'weapon_pistol_m1899', sellPrice = 250.00, buyPrice = 1000.00 },
             { name = 'weapon_rifle_elephant', sellPrice = 145.00, buyPrice = 580.00 },
             { name = 'weapon_shotgun_doublebarrel_exotic', sellPrice = 100.00, buyPrice = 400.00 },
-            { name = 'weapon_bow_improved', sellPrice = 125.00, buyPrice = 500.00 },
-            { name = 'WEAPON_MELEE_CLEAVER', sellPrice = 2.50, buyPrice = 10.00 },
-            { name = 'WEAPON_MELEE_HATCHET', sellPrice = 2.50, buyPrice = 10.00 },
-            { name = 'WEAPON_MELEE_HATCHET_HUNTER', sellPrice = 2.50, buyPrice = 10.00 },
-            { name = 'WEAPON_MELEE_KNIFE_TRADER', sellPrice = 25.00, buyPrice = 100.00 },
+            { name = 'weapon_melee_cleaver', sellPrice = 2.50, buyPrice = 10.00 },
+            { name = 'weapon_melee_hatchet', sellPrice = 2.50, buyPrice = 10.00 },
+            { name = 'weapon_melee_hatchet_hunter', sellPrice = 2.50, buyPrice = 10.00 },
+            { name = 'weapon_melee_knife_trader', sellPrice = 25.00, buyPrice = 100.00 },
             { name = 'weapon_melee_knife_jawbone', sellPrice = 25.00, buyPrice = 100.00 },
             { name = 'weapon_melee_knife_horror', sellPrice = 25.00, buyPrice = 100.00 },
             { name = 'weapon_melee_knife_rustic', sellPrice = 25.00, buyPrice = 100.00 },
@@ -248,8 +248,8 @@ Config.ItemGroups = {
             { name = 'weapon_melee_torch', sellPrice = 0.25, buyPrice = 1.00 },
             { name = 'weapon_melee_davy_lantern', sellPrice = 25.00, buyPrice = 100.00 },
             { name = 'weapon_melee_lantern_halloween', sellPrice = 25.00, buyPrice = 100.00 },
-            { name = 'WEAPON_THROWN_THROWING_KNIVES', sellPrice = 2.50, buyPrice = 10.00 },
-            { name = 'WEAPON_THROWN_TOMAHAWK', sellPrice = 2.50, buyPrice = 10.00 },
+            { name = 'weapon_thrown_throwing_knives', sellPrice = 2.50, buyPrice = 10.00 },
+            { name = 'weapon_thrown_tomahawk', sellPrice = 2.50, buyPrice = 10.00 },
             { name = 'weapon_thrown_bolas', sellPrice = 7.50, buyPrice = 30.00 },
             { name = 'weapon_thrown_bolas_hawkmoth', sellPrice = 7.50, buyPrice = 30.00 },
             { name = 'weapon_thrown_bolas_ironspiked', sellPrice = 7.50, buyPrice = 30.00 },
@@ -1038,6 +1038,9 @@ Config.Shops = {
     {
         id = 'Doctor-Rhodes',
         Doors = {}, -- Add door IDs for this location.
+        DoorsCoords = {
+            { coords = vector3(1370.190552, -1310.166992, 76.952049), model = -1866470762, heading = 147.06 },
+            },
         label = 'Rhodes Doctor',
         coords = vector4(1369.1144, -1306.4569, 77.9710, 235.6972),
         npcmodel = 's_m_m_unibutchers_01',
@@ -1078,6 +1081,9 @@ Config.Shops = {
     {
         id = 'Doctor-Armadillo',
         Doors = {}, -- Add door IDs for this location.
+        DoorsCoords = {
+            { coords = vector3(-3661.820068, -2599.769775, -14.285960), model = 1650744725, heading = 359.58 },
+        },
         label = 'Armadillo Doctor',
         coords = vector4(-3662.6106, -2595.7751, -13.3095, 179.2983),
         npcmodel = 's_m_m_unibutchers_01',
@@ -1413,5 +1419,62 @@ Config.Shops = {
         money = 'cash',
         buy = {{'Food', 0.0}, {'Tools', 0.0}},
         sell = {{'Herbs', 0.0}, {'Food', 0.0}},
+    },
+    ---------------------------------
+    -- Armadillo Barber
+    ---------------------------------
+    {
+        id = 'Barber-Armadillo',
+        Doors = {}, -- Add door IDs for this location.
+        DoorsCoords = {
+            { coords = vector3(-3661.820068, -2599.769775, -14.285960), model = 1650744725, heading = 359.58 },
+        },
+        label = 'Armadillo Barber',
+        coords = vector4(-3668.1033, -2596.4331, -13.5669, 175.3788),
+        npcmodel = 's_m_m_unibutchers_01',
+        npc = false,
+        blip = {
+            show = false,
+            sprite = 'blip_shop_doctor',
+            scale = 0.2,
+            label = 'Armadillo Barber',
+        },
+        money = 'cash',
+        buy = {},
+        sell = {},
+    },
+    {
+        id = 'Barber-SaintDenis',
+        Doors = {3384081966,1410192354,2357822424,1708357485,29962690,527035651}, -- Add door IDs for this location.
+        label = 'Saint Denis Barber',
+        coords = vector4(2655.32, -1179.96, 53.28, 358.97),
+        npcmodel = 's_m_m_unibutchers_01',
+        npc = false,
+        blip = {
+            show = false,
+            sprite = 'blip_shop_doctor',
+            scale = 0.2,
+            label = 'Saint Denis Barber',
+        },
+        money = 'cash',
+        buy = {},
+        sell = {},
+    },
+        {
+        id = 'Barber-Blackwater',
+        Doors = {2004868928, 1632219860,2512591818}, -- Add door IDs for this location.
+        label = 'Blackwater Barber',
+        coords = vector4(-816.63, -1367.93, 43.75, 283.56),
+        npcmodel = 's_m_m_unibutchers_01',
+        npc = false,
+        blip = {
+            show = false,
+            sprite = 'blip_shop_doctor',
+            scale = 0.2,
+            label = 'Blackwater Barber',
+        },
+        money = 'cash',
+        buy = {},
+        sell = {},
     },
 }

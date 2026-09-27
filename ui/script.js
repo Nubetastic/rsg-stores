@@ -22,7 +22,67 @@
     const checkoutBtn = document.getElementById('checkoutBtn');
     const clearBtn = document.getElementById('clearBtn');
     const closeBtn = document.getElementById('closeBtn');
+    const scaleRoot = document.getElementById('scaleRoot');
+    const scaleMenu = document.getElementById('scaleMenu');
+    const scaleSlider = document.getElementById('scaleSlider');
+    const scaleValue = document.getElementById('scaleValue');
+    const openScaleBtn = document.getElementById('openScaleBtn');
+    const closeScaleBtn = document.getElementById('closeScaleBtn');
     const toasts = document.getElementById('toasts');
+
+    const scaleStorageKey = 'rsg-stores-scale';
+    const viewportInset = 24;
+    const configuredScaleMinimum = Number(scaleSlider.min) / 100;
+    const configuredScaleMaximum = Number(scaleSlider.max) / 100;
+
+    const storedScale = Number(localStorage.getItem(scaleStorageKey));
+    if (storedScale >= Number(scaleSlider.min) && storedScale <= Number(scaleSlider.max)) {
+        scaleSlider.value = storedScale;
+    }
+
+    function getViewportScaleMaximum() {
+        const previousTransform = scaleRoot.style.transform;
+        scaleRoot.style.transform = 'scale(1)';
+
+        const rootRect = scaleRoot.getBoundingClientRect();
+        const transformOrigin = getComputedStyle(scaleRoot).transformOrigin
+            .split(' ')
+            .map(Number.parseFloat);
+        const originX = rootRect.left + transformOrigin[0];
+        const originY = rootRect.top + transformOrigin[1];
+        const visibleBounds = [...scaleRoot.querySelectorAll('[data-scale-bound]')].filter((element) => {
+            const style = getComputedStyle(element);
+            const rect = element.getBoundingClientRect();
+            return style.display !== 'none' && rect.width > 0 && rect.height > 0;
+        });
+        const maximums = [configuredScaleMaximum];
+
+        visibleBounds.forEach((element) => {
+            const rect = element.getBoundingClientRect();
+
+            if (rect.left < originX) maximums.push((originX - viewportInset) / (originX - rect.left));
+            if (rect.right > originX) maximums.push((window.innerWidth - viewportInset - originX) / (rect.right - originX));
+            if (rect.top < originY) maximums.push((originY - viewportInset) / (originY - rect.top));
+            if (rect.bottom > originY) maximums.push((window.innerHeight - viewportInset - originY) / (rect.bottom - originY));
+        });
+
+        scaleRoot.style.transform = previousTransform;
+        return Math.max(configuredScaleMinimum, Math.min(...maximums));
+    }
+
+    function applyMenuScale() {
+        const requestedScale = Number(scaleSlider.value) / 100;
+        const appliedScale = Math.min(requestedScale, getViewportScaleMaximum());
+        const appliedPercentage = Math.max(
+            Number(scaleSlider.min),
+            Math.min(Number(scaleSlider.max), Math.floor(appliedScale * 100))
+        );
+
+        scaleRoot.style.transform = `scale(${appliedPercentage / 100})`;
+        scaleSlider.value = String(appliedPercentage);
+        scaleValue.textContent = `${appliedPercentage}%`;
+        localStorage.setItem(scaleStorageKey, String(appliedPercentage));
+    }
 
     function fmtMoney(value) {
         return (Math.round((value || 0) * 100) / 100).toFixed(2);
@@ -132,7 +192,8 @@
     function renderTabs() {
         buyTab.classList.toggle('active', mode === 'buy');
         sellTab.classList.toggle('active', mode === 'sell');
-        sellTab.classList.toggle('hidden', !(shop && shop.sell));
+        buyTab.classList.toggle('hidden', getCategories('buy').length === 0);
+        sellTab.classList.toggle('hidden', getCategories('sell').length === 0);
         ownedFilter.classList.toggle('hidden', mode !== 'sell');
     }
 
@@ -318,7 +379,7 @@
 
     function switchMode(newMode) {
         if (newMode === mode) return;
-        if (newMode === 'sell' && !(shop && shop.sell)) return;
+        if (getCategories(newMode).length === 0) return;
 
         mode = newMode;
         if (activeCategoryId[mode] === null) {
@@ -339,8 +400,9 @@
         L = data.locale || L;
         if (!Array.isArray(shop.categories)) shop.categories = [];
         if (shop.sell && !Array.isArray(shop.sell.categories)) shop.sell.categories = [];
-        mode = refresh && (previousMode !== 'sell' || shop.sell)
-            ? previousMode : (!shop.categories.length && shop.sell ? 'sell' : 'buy');
+        const previousModeAvailable = getCategories(previousMode).length > 0;
+        mode = refresh && previousModeAvailable
+            ? previousMode : (shop.categories.length ? 'buy' : 'sell');
         baskets.buy.clear();
         baskets.sell.clear();
         activeCategoryId.buy = shop.categories.length ? shop.categories[0].id : null;
@@ -362,9 +424,11 @@
         renderBasket();
 
         app.classList.remove('hidden');
+        requestAnimationFrame(applyMenuScale);
     }
 
     function close() {
+        scaleMenu.classList.add('hidden');
         app.classList.add('hidden');
         shop = null;
         baskets.buy.clear();
@@ -372,6 +436,13 @@
     }
 
     closeBtn.addEventListener('click', () => post('close'));
+    openScaleBtn.addEventListener('click', () => {
+        applyMenuScale();
+        scaleMenu.classList.remove('hidden');
+    });
+    closeScaleBtn.addEventListener('click', () => scaleMenu.classList.add('hidden'));
+    scaleSlider.addEventListener('input', applyMenuScale);
+    window.addEventListener('resize', applyMenuScale);
     clearBtn.addEventListener('click', clearBasket);
     checkoutBtn.addEventListener('click', checkout);
     buyTab.addEventListener('click', () => switchMode('buy'));

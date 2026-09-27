@@ -118,6 +118,7 @@ end
 local function OpenShop(shopId)
     local shop = shopsById[shopId]
     if not shop then return false end
+    if #shop.buy == 0 and #shop.sell == 0 then return false end
 
     if not PlayerHasShopJob(shop, RSGCore.Functions.GetPlayerData().job) then
         lib.notify({ title = shop.label, description = locale('error.job_locked'), type = 'error' })
@@ -339,6 +340,8 @@ end)
 
 -- Shop zones are independent of the optional NPC.
 local function registerShopInteraction(shop)
+    if #shop.buy == 0 and #shop.sell == 0 then return end
+
     local zone = exports.ox_target:addSphereZone({
         name = 'rsg_stores_' .. shop.id,
         coords = vector3(shop.coords.x, shop.coords.y, shop.coords.z),

@@ -13,6 +13,7 @@ shared_scripts {
 }
 
 client_scripts {
+    'client/customDoor.lua',
     'client/hours.lua',
     'client/client.lua',
 }
