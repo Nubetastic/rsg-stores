@@ -246,15 +246,52 @@
                         ${stockLine}
                     </div>
                 </div>
-                <button class="add-btn" ${disabled}>${escapeHtml(buttonLabel)}</button>
+                <div class="item-actions">
+                    <div class="item-quantity">
+                        <div class="qty-stepper">
+                            <input class="qty-value" type="text" value="${disabled ? 0 : 1}" inputmode="numeric" ${disabled}>
+                            <div class="item-qty-arrows">
+                                <button class="qty-btn qty-plus" ${disabled}>&#9650;</button>
+                                <button class="qty-btn qty-minus" ${disabled}>&#9660;</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="item-action-buttons">
+                        <button class="add-btn" ${disabled}>${escapeHtml(buttonLabel)}</button>
+                    </div>
+                    ${mode === 'sell' ? `<button class="item-all-btn" ${disabled}>${escapeHtml(L.allButton)}</button>` : ''}
+                </div>
             `;
+            const input = card.querySelector('.qty-value');
+            const setCardQty = (amount) => {
+                input.value = Math.max(1, Math.min(amount, getItemCap(item.name)));
+            };
+            input.addEventListener('change', () => {
+                const parsed = parseInt(input.value, 10);
+                setCardQty(Number.isFinite(parsed) ? parsed : 1);
+            });
+            input.addEventListener('wheel', (event) => {
+                if (document.activeElement !== input || input.disabled || event.deltaY === 0) return;
+                event.preventDefault();
+                const parsed = parseInt(input.value, 10);
+                setCardQty((Number.isFinite(parsed) ? parsed : 1) + (event.deltaY < 0 ? 1 : -1));
+            }, { passive: false });
+            card.querySelector('.qty-minus').addEventListener('click', () => setCardQty(Number(input.value) - 1));
+            card.querySelector('.qty-plus').addEventListener('click', () => setCardQty(Number(input.value) + 1));
+            if (mode === 'sell') {
+                card.querySelector('.item-all-btn').addEventListener('click', () => setCardQty(getItemCap(item.name)));
+            }
             const addBtn = card.querySelector('.add-btn');
-            addBtn.addEventListener('click', () => addToBasket(item));
+            addBtn.addEventListener('click', () => {
+                const parsed = parseInt(input.value, 10);
+                setCardQty(Number.isFinite(parsed) ? parsed : 1);
+                addToBasket(item, Number(input.value));
+            });
             itemGrid.appendChild(card);
         });
     }
 
-    function addToBasket(item) {
+    function addToBasket(item, amount) {
         const basket = getBasket(mode);
         const { maxUniqueItems } = getLimits(mode);
         const cap = getItemCap(item.name);
@@ -274,13 +311,13 @@
                 showToast(title, message, 'error');
                 return;
             }
-            existing.amount += 1;
+            existing.amount = Math.min(existing.amount + amount, cap);
         } else {
             if (basket.size >= maxUniqueItems) {
                 showToast(L.toastBasketFullTitle, fmt(L.toastBasketFull, maxUniqueItems), 'error');
                 return;
             }
-            basket.set(item.name, { ...item, amount: 1 });
+            basket.set(item.name, { ...item, amount: Math.min(amount, cap) });
         }
 
         renderBasket();
@@ -344,10 +381,19 @@
                 row.querySelector('.remove-btn').addEventListener('click', () => setQty(line.name, 0));
 
                 const input = row.querySelector('.qty-value');
+                input.dataset.name = line.name;
                 input.addEventListener('change', () => {
                     const parsed = parseInt(input.value, 10);
                     setQty(line.name, Number.isFinite(parsed) ? parsed : line.amount);
                 });
+                input.addEventListener('wheel', (event) => {
+                    if (document.activeElement !== input || event.deltaY === 0) return;
+                    event.preventDefault();
+                    const parsed = parseInt(input.value, 10);
+                    setQty(line.name, Math.max(1, (Number.isFinite(parsed) ? parsed : line.amount) + (event.deltaY < 0 ? 1 : -1)));
+                    const updatedInput = Array.from(basketRows.querySelectorAll('.qty-value')).find((field) => field.dataset.name === line.name);
+                    if (updatedInput) updatedInput.focus();
+                }, { passive: false });
 
                 basketRows.appendChild(row);
             });

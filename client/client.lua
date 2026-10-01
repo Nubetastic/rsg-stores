@@ -24,6 +24,7 @@ local UiLocale = {
     emptySell = locale('ui.empty_sell'),
     addToBasket = locale('ui.add_to_basket'),
     sellButton = locale('ui.sell_button'),
+    allButton = locale('ui.all_button'),
     ownedPrefix = locale('ui.owned_prefix'),
     unitSuffix = locale('ui.unit_suffix'),
     toastNoItemTitle = locale('ui.toast_no_item_title'),

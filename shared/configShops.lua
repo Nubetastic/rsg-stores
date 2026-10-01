@@ -67,55 +67,6 @@ Config.ItemGroups = {
             { name = 'pen', sellPrice = 0.05, buyPrice = 0.20 },
         },
     },
-    ["Herbs"] = {
-        id = 'sell_herbs',
-        label = 'Herbs & Plants',
-        icon = 'fa-solid fa-leaf',
-        items = {
-            { name = 'herb_agarita', sellPrice = 0.10, buyPrice = 0.40 },
-            { name = 'herb_alaskan_ginseng', sellPrice = 0.10, buyPrice = 0.40 },
-            { name = 'herb_american_ginseng', sellPrice = 0.10, buyPrice = 0.40 },
-            { name = 'herb_bay_boletus', sellPrice = 0.10, buyPrice = 0.40 },
-            { name = 'herb_bitterweed', sellPrice = 0.10, buyPrice = 0.40 },
-            { name = 'herb_black_berry', sellPrice = 0.10, buyPrice = 0.40 },
-            { name = 'herb_black_current', sellPrice = 0.10, buyPrice = 0.40 },
-            { name = 'herb_bloodflower', sellPrice = 0.10, buyPrice = 0.40 },
-            { name = 'herb_burdock_root', sellPrice = 0.10, buyPrice = 0.40 },
-            { name = 'herb_cardinal_flower', sellPrice = 0.10, buyPrice = 0.40 },
-            { name = 'herb_chanterelles', sellPrice = 0.10, buyPrice = 0.40 },
-            { name = 'herb_choc_daisy', sellPrice = 0.10, buyPrice = 0.40 },
-            { name = 'herb_common_bullrush', sellPrice = 0.10, buyPrice = 0.40 },
-            { name = 'herb_creek_plum', sellPrice = 0.10, buyPrice = 0.40 },
-            { name = 'herb_creeping_thyme', sellPrice = 0.10, buyPrice = 0.40 },
-            { name = 'herb_crows_garlic', sellPrice = 0.10, buyPrice = 0.40 },
-            { name = 'herb_desert_sage', sellPrice = 0.10, buyPrice = 0.40 },
-            { name = 'herb_english_mace', sellPrice = 0.10, buyPrice = 0.40 },
-            { name = 'herb_evergreen_huckleberry', sellPrice = 0.10, buyPrice = 0.40 },
-            { name = 'herb_golden_currant', sellPrice = 0.10, buyPrice = 0.40 },
-            { name = 'herb_harrietum_officinalis', sellPrice = 0.10, buyPrice = 0.40 },
-            { name = 'herb_hummingbird_sage', sellPrice = 0.10, buyPrice = 0.40 },
-            { name = 'herb_indian_tobacco', sellPrice = 0.10, buyPrice = 0.40 },
-            { name = 'herb_lady_slipper', sellPrice = 0.10, buyPrice = 0.40 },
-            { name = 'herb_milkweed', sellPrice = 0.10, buyPrice = 0.40 },
-            { name = 'herb_oleander_sage', sellPrice = 0.10, buyPrice = 0.40 },
-            { name = 'herb_oregano', sellPrice = 0.10, buyPrice = 0.40 },
-            { name = 'herb_parasol_mushroom', sellPrice = 0.10, buyPrice = 0.40 },
-            { name = 'herb_prairie_poppy', sellPrice = 0.10, buyPrice = 0.40 },
-            { name = 'herb_rams_head', sellPrice = 0.10, buyPrice = 0.40 },
-            { name = 'herb_red_raspberry', sellPrice = 0.10, buyPrice = 0.40 },
-            { name = 'herb_red_sage', sellPrice = 0.10, buyPrice = 0.40 },
-            { name = 'herb_saltbush', sellPrice = 0.10, buyPrice = 0.40 },
-            { name = 'herb_texas_blue_bonnet', sellPrice = 0.10, buyPrice = 0.40 },
-            { name = 'herb_violet_snowdrop', sellPrice = 0.10, buyPrice = 0.40 },
-            { name = 'herb_wild_carrot', sellPrice = 0.10, buyPrice = 0.40 },
-            { name = 'herb_wild_feverfew', sellPrice = 0.10, buyPrice = 0.40 },
-            { name = 'herb_wild_mint', sellPrice = 0.10, buyPrice = 0.40 },
-            { name = 'herb_wild_rhubarb', sellPrice = 0.10, buyPrice = 0.40 },
-            { name = 'herb_wintergreen_berry', sellPrice = 0.10, buyPrice = 0.40 },
-            { name = 'herb_wisteria', sellPrice = 0.10, buyPrice = 0.40 },
-            { name = 'herb_yarrow', sellPrice = 0.10, buyPrice = 0.40 },
-        },
-    },
     ["Ammunition"] = {
         id = 'ammo',
         label = 'Ammunition',
@@ -542,7 +493,7 @@ Config.Shops = {
         },
         money = 'cash',
         buy = {{'Food', 0.0}, {'Tools', 0.0}, {'Fishing', 0.0}},
-        sell = {{'Food', 0.0}, {'Tools', 0.0}, {'Herbs', 0.0}},
+        sell = {{'Food', 0.0}, {'Tools', 0.0}},
     },
     ---------------------------------
     -- Valentine General Store
@@ -562,7 +513,7 @@ Config.Shops = {
         },
         money = 'cash',
         buy = {{'Food', 0.0}, {'Tools', 0.0}, {'Fishing', 0.0}},
-        sell = {{'Food', 0.0}, {'Tools', 0.0}, {'Herbs', 0.0}},
+        sell = {{'Food', 0.0}, {'Tools', 0.0}},
     },
     ---------------------------------
     -- Strawberry General Store
@@ -582,7 +533,7 @@ Config.Shops = {
         },
         money = 'cash',
         buy = {{'Food', 0.0}, {'Tools', 0.0}, {'Fishing', 0.0}},
-        sell = {{'Food', 0.0}, {'Tools', 0.0}, {'Herbs', 0.0}},
+        sell = {{'Food', 0.0}, {'Tools', 0.0}},
     },
     ---------------------------------
     -- Saint Denis General Store
@@ -602,7 +553,7 @@ Config.Shops = {
         },
         money = 'cash',
         buy = {{'Food', 0.0}, {'Tools', 0.0}, {'Fishing', 0.0}},
-        sell = {{'Food', 0.0}, {'Tools', 0.0}, {'Herbs', 0.0}},
+        sell = {{'Food', 0.0}, {'Tools', 0.0}},
     },
     ---------------------------------
     -- Tumbleweed General Store
@@ -622,7 +573,7 @@ Config.Shops = {
         },
         money = 'cash',
         buy = {{'Food', 0.0}, {'Tools', 0.0}, {'Fishing', 0.0}},
-        sell = {{'Food', 0.0}, {'Tools', 0.0}, {'Herbs', 0.0}},
+        sell = {{'Food', 0.0}, {'Tools', 0.0}},
     },
     ---------------------------------
     -- Armadillo General Store
@@ -642,7 +593,7 @@ Config.Shops = {
         },
         money = 'cash',
         buy = {{'Food', 0.0}, {'Tools', 0.0}, {'Fishing', 0.0}},
-        sell = {{'Food', 0.0}, {'Tools', 0.0}, {'Herbs', 0.0}},
+        sell = {{'Food', 0.0}, {'Tools', 0.0}},
     },
     ---------------------------------
     -- Blackwater General Store
@@ -662,7 +613,7 @@ Config.Shops = {
         },
         money = 'cash',
         buy = {{'Food', 0.0}, {'Tools', 0.0}, {'Fishing', 0.0}},
-        sell = {{'Food', 0.0}, {'Tools', 0.0}, {'Herbs', 0.0}},
+        sell = {{'Food', 0.0}, {'Tools', 0.0}},
     },
     ---------------------------------
     -- Van Horn General Store
@@ -682,7 +633,7 @@ Config.Shops = {
         },
         money = 'cash',
         buy = {{'Food', 0.0}, {'Tools', 0.0}, {'Fishing', 0.0}},
-        sell = {{'Food', 0.0}, {'Tools', 0.0}, {'Herbs', 0.0}},
+        sell = {{'Food', 0.0}, {'Tools', 0.0}},
     },
     ---------------------------------
     -- Valentine Gunsmith
@@ -1418,7 +1369,7 @@ Config.Shops = {
         },
         money = 'cash',
         buy = {{'Food', 0.0}, {'Tools', 0.0}},
-        sell = {{'Herbs', 0.0}, {'Food', 0.0}},
+        sell = {{'Food', 0.0}},
     },
     ---------------------------------
     -- Armadillo Barber

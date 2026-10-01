@@ -61,6 +61,7 @@
         "empty_sell": "No items selected. Choose items above to sell.",
         "add_to_basket": "Add to Basket",
         "sell_button": "Sell",
+        "all_button": "Sell All",
         "owned_prefix": "You own:",
         "unit_suffix": "ea",
         "toast_no_item_title": "Sell",
